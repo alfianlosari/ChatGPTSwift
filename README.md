@@ -1,6 +1,8 @@
 # ChatGPTSwift
 
-Access ChatGPT "Official" API from Swift
+![Alt text](https://imagizer.imageshack.com/v2/640x480q90/923/c9MPBA.png "image")
+
+Access ChatGPT "Official" API from Swift. Works on all Apple platforms.
 
 ## Supported Platforms
 
