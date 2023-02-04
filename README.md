@@ -4,6 +4,11 @@
 
 Access ChatGPT "Official" API from Swift. Works on all Apple platforms.
 
+## NOTE
+
+This use a leaked model with special prompt to trigger. Conversation history is stored on client.
+Its an unpatched bug that might be taken down in future.
+
 ## Supported Platforms
 
 - iOS/tvOS 15 and above
