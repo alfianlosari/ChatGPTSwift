@@ -15,6 +15,12 @@ Its an unpatched bug that might be taken down in future.
 - macOS 12 and above
 - watchOS 8 and above
 
+## Installation
+
+Swift Package Manager
+- File > Swift Packages > Add Package Dependency
+- Add https://github.com/alfianlosari/ChatGPTSwift.git
+
 ## Requirement
 
 Register for API key from [OpenAI](https://openai.com/api). Initialize with api key
