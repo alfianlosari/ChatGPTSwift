@@ -69,6 +69,10 @@ public final class ChatGPTAPI {
         return try JSONSerialization.data(withJSONObject: jsonBody)
     }
     
+    private func appendToHistoryList(userText: String, responseText: String) {
+        self.historyList.append("User: \(userText)\n\n\nChatGPT: \(responseText)<|im_end|>\n")
+    }
+    
     public func sendMessageStream(text: String) async throws -> AsyncThrowingStream<String, Error> {
         var urlRequest = self.urlRequest
         urlRequest.httpBody = try jsonBody(text: text)
@@ -92,11 +96,11 @@ public final class ChatGPTAPI {
                            let data = line.dropFirst(6).data(using: .utf8),
                            let response = try? self.jsonDecoder.decode(CompletionResponse.self, from: data),
                            let text = response.choices.first?.text {
-                            streamText += text
+                            responseText += text
                             continuation.yield(text)
                         }
                     }
-                    self.historyList.append(streamText)
+                    self.appendToHistoryList(userText: text, responseText: responseText)
                     continuation.finish()
                 } catch {
                     continuation.finish(throwing: error)
@@ -122,7 +126,7 @@ public final class ChatGPTAPI {
         do {
             let completionResponse = try self.jsonDecoder.decode(CompletionResponse.self, from: data)
             let responseText = completionResponse.choices.first?.text ?? ""
-            self.historyList.append(responseText)
+            self.appendToHistoryList(userText: text, responseText: responseText)
             return responseText
         } catch {
             throw error
