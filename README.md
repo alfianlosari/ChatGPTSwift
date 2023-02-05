@@ -58,3 +58,6 @@ Task {
 }
         
 ```
+
+## Demo Apps
+You can checkthe  demo apps for iOS and macOS from the [SwiftUIChatGPT repo](https://github.com/alfianlosari/ChatGPTSwiftUI)
