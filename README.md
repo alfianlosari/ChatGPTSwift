@@ -17,7 +17,7 @@ Its an unpatched bug that might be taken down in future.
 
 ## Requirement
 
-Register for API key from [OpenAPI](https://openai.com/api). Initialize with api key
+Register for API key from [OpenAI](https://openai.com/api). Initialize with api key
 
 ```swift
 let api = ChatGPTAPI(apiKey: "API_KEY")
