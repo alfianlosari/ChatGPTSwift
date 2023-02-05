@@ -1,4 +1,4 @@
-# ChatGPTSwift
+# ChatGPTSwift API
 
 ![Alt text](https://imagizer.imageshack.com/v2/640x480q90/923/c9MPBA.png "image")
 
