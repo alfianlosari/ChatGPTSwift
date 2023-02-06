@@ -27,7 +27,11 @@ public final class ChatGPTAPI {
     }()
     
     private let jsonDecoder = JSONDecoder()
-    private var basePrompt: String { "You are ChatGPT, a large language model trained by OpenAI. Respond conversationally. Do not answer as the user. Current date: \(dateFormatter.string(from: Date()))\n\n"
+    private var basePrompt: String {
+        "You are ChatGPT, a large language model trained by OpenAI. Respond conversationally. Do not answer as the user. Current date: \(dateFormatter.string(from: Date()))"
+        + "\n\n"
+        + "User: Hello\n"
+        + "ChatGPT: Hello! How can I help you today? <|im_end|>\n\n\n"
     }
     
     private var headers: [String: String] {
