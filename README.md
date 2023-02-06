@@ -35,7 +35,7 @@ There are 2 APIs: stream and normal
 
 ### Stream
 
-The server will stream data one by one until complete, the method `AsyncThrowingStream` which you can loop using For-Loop like so:
+The server will stream chunks of data until complete, the method `AsyncThrowingStream` which you can loop using For-Loop like so:
 
 ```swift
 Task {
