@@ -6,10 +6,11 @@ Access ChatGPT "Official" API from Swift. Works on all Apple platforms.
 
 ## DISCLAIMERS!
 
-This uses a leaked model with special prompt to trigger. Conversation history is stored on client.
-Its an unpatched bug that might be taken down in future.
-
 Use this at your own risk, there is a possibility that OpenAI might ban your account using this approach! I don't take any responsibility.
+
+## UPDATE 5 - 8 Feb 2023
+
+The leaked model had been removed by OpenAI. Until a new model is found, i'll use the default text-davinci-003
 
 ## Supported Platforms
 
