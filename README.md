@@ -5,10 +5,11 @@
 Access ChatGPT "Official" API from Swift. Works on all Apple platforms.
 
 ## DISCLAIMERS!
+This repository is updated frequently. Expect breaking changes. Always read readme before updating or opening an issue.
 
 Use this at your own risk, there is a possibility that OpenAI might ban your account using this approach! I don't take any responsibility.
 
-## UPDATE 5 - 8 Feb 2023
+## UPDATE - 8 Feb 2023
 
 The leaked model had been removed by OpenAI. Until a new model is found, i'll use the default text-davinci-003
 
