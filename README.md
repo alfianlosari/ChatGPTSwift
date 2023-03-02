@@ -2,16 +2,7 @@
 
 ![Alt text](https://imagizer.imageshack.com/v2/640x480q90/923/c9MPBA.png "image")
 
-Access ChatGPT "Official" API from Swift. Works on all Apple platforms.
-
-## DISCLAIMERS!
-This repository is updated frequently. Expect breaking changes. Always read readme before updating or opening an issue.
-
-Use this at your own risk, there is a possibility that OpenAI might ban your account using this approach! I don't take any responsibility.
-
-## UPDATE - 8 Feb 2023
-
-The leaked model had been removed by OpenAI. Until a new model is found, i'll use the default text-davinci-003
+Access OpenAI ChatGPT Official API using Swift. Works on all Apple platforms.
 
 ## Supported Platforms
 
@@ -31,6 +22,14 @@ Register for API key from [OpenAI](https://openai.com/api). Initialize with api 
 
 ```swift
 let api = ChatGPTAPI(apiKey: "API_KEY")
+```
+
+optionally, you can provide the system prompt, temperature, and model. Default values for these parameters are:
+```swift
+public init(apiKey: String,
+        model: String = "gpt-3.5-turbo",
+        systemPrompt: String = "You are a helpful assistant",
+        temperature: Double = 0.5)
 ```
 
 ## Usage
@@ -68,6 +67,18 @@ Task {
 }
         
 ```
+
+## History List
+
+The client stores the history list of the conversation that will be included in the new prompt so ChatGPT aware of the previous context of conversation. When sending new prompt, the client will make sure the token is not exceeding 4000 (using calculation of 1 token=4chars), in case it exceeded the token, some of previous conversations will be truncated
+
+You can also delete the history list by invoking
+```swift
+api.deleteHistoryList()
+```
+
+You should not call this, while waiting for the response from ChatGPT. I'll need to handle this properly in later release/
+
 
 ## Demo Apps
 You can check the demo apps for iOS and macOS from the [SwiftUIChatGPT repo](https://github.com/alfianlosari/ChatGPTSwiftUI)
