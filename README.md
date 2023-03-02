@@ -32,7 +32,7 @@ public init(apiKey: String,
         temperature: Double = 0.5)
 ```
 
-To learn more about those parameters, you can visit the official [ChatGPT API documentation](https://platform.openai.com/docs/guides/chat/introduction)
+To learn more about those parameters, you can visit the official [ChatGPT API documentation](https://platform.openai.com/docs/guides/chat/introduction) and [ChatGPT API Introduction Page](https://openai.com/blog/introducing-chatgpt-and-whisper-apis)
 
 ## Usage
 
