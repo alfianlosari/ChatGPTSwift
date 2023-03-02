@@ -32,6 +32,8 @@ public init(apiKey: String,
         temperature: Double = 0.5)
 ```
 
+To learn more about those parameters, you can visit the official [ChatGPT API documentation](https://platform.openai.com/docs/guides/chat/introduction)
+
 ## Usage
 
 There are 2 APIs: stream and normal
