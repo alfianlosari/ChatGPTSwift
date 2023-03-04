@@ -85,16 +85,57 @@ public class ChatGPTAPI: @unchecked Sendable {
         return request
     }
 
+
+    public func sendMessageStream(text: String) async throws -> AsyncThrowingStream<String, Error> {
+         var request = self.clientRequest
+        request.body = .bytes(try jsonBody(text: text, stream: false))
+        
+        let response = try await httpClient.execute(request, timeout: .seconds(25))
+
+        guard response.status == .ok else {
+            var data = Data()
+            for try await buffer in response.body {
+                data.append(.init(buffer: buffer))
+            }
+            var error = "Bad Response: \(response.status.code)"
+            if data.count > 0, let errorResponse = try? jsonDecoder.decode(ErrorRootResponse.self, from: data).error {
+                error.append("\n\(errorResponse.message)")
+            }
+            throw error
+        }
+        
+        return AsyncThrowingStream<String, Error> {  continuation in
+            Task(priority: .userInitiated) { [weak self] in
+                do {
+                    var responseText = ""
+                    for try await buffer in response.body {
+                        let line = String(buffer: buffer)
+                        if line.hasPrefix("data: "),
+                           let data = line.dropFirst(6).data(using: .utf8),
+                           let response = try? self?.jsonDecoder.decode(StreamCompletionResponse.self, from: data),
+                           let text = response.choices.first?.delta.content {
+                            responseText += text
+                            continuation.yield(text)
+                        }
+                    }
+                    self?.appendToHistoryList(userText: text, responseText: responseText)
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+        }
+    }
+
     public func sendMessage(text: String) async throws -> String {
         var request = self.clientRequest
         request.body = .bytes(try jsonBody(text: text, stream: false))
         
         let response = try await httpClient.execute(request, timeout: .seconds(25))
-        let byteBuffers = response.body.map { Data(buffer: $0)}
 
         var data = Data()
-        for try await chunk in byteBuffers {
-            data.append(chunk)            
+        for try await buffer in response.body {
+            data.append(.init(buffer: buffer))
         }
 
         guard response.status == .ok else {
@@ -122,6 +163,7 @@ public class ChatGPTAPI: @unchecked Sendable {
         
     }
     #else
+
     private let urlSession = URLSession.shared
     private var urlRequest: URLRequest {
         let url = URL(string: urlString)!
