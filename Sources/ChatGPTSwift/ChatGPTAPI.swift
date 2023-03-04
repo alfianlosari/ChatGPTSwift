@@ -88,7 +88,7 @@ public class ChatGPTAPI: @unchecked Sendable {
 
     public func sendMessageStream(text: String) async throws -> AsyncThrowingStream<String, Error> {
          var request = self.clientRequest
-        request.body = .bytes(try jsonBody(text: text, stream: false))
+        request.body = .bytes(try jsonBody(text: text, stream: true))
         
         let response = try await httpClient.execute(request, timeout: .seconds(25))
 
