@@ -113,8 +113,14 @@ public class ChatGPTAPI: @unchecked Sendable {
         } catch {
             throw error
         }
+        
     }
 
+    deinit {
+        let client = self.httpClient
+        Task.detached { try await client.shutdown() }
+        
+    }
     #else
     private let urlSession = URLSession.shared
     private var urlRequest: URLRequest {
