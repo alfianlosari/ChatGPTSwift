@@ -9,6 +9,7 @@ Access OpenAI ChatGPT Official API using Swift. Works on all Apple platforms.
 - iOS/tvOS 15 and above
 - macOS 12 and above
 - watchOS 8 and above
+- Linux
 
 ## Installation
 
