@@ -19,7 +19,7 @@ Swift Package Manager
 
 Cocoapods
 ```ruby
-source 'https://github.com/alfianlosari/ChatGPTSwift'
+source 'https://github.com/CocoaPods/Specs.git'
 platform :ios, '15.0'
 use_frameworks!
 
