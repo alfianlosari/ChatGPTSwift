@@ -13,11 +13,11 @@ Access OpenAI ChatGPT Official API using Swift. Works on all Apple platforms.
 
 ## Installation
 
-Swift Package Manager
+### Swift Package Manager
 - File > Swift Packages > Add Package Dependency
 - Add https://github.com/alfianlosari/ChatGPTSwift.git
 
-Cocoapods
+### Cocoapods
 ```ruby
 source 'https://github.com/CocoaPods/Specs.git'
 platform :ios, '15.0'
