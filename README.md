@@ -17,6 +17,17 @@ Swift Package Manager
 - File > Swift Packages > Add Package Dependency
 - Add https://github.com/alfianlosari/ChatGPTSwift.git
 
+Cocoapods
+```ruby
+source 'https://github.com/alfianlosari/ChatGPTSwift'
+platform :ios, '15.0'
+use_frameworks!
+
+target 'MyApp' do
+  pod 'ChatGPTSwift', '~> 1.1.1'
+end
+```
+
 ## Requirement
 
 Register for API key from [OpenAI](https://openai.com/api). Initialize with api key
