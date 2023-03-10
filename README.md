@@ -19,7 +19,6 @@ Access OpenAI ChatGPT Official API using Swift. Works on all Apple platforms.
 
 ### Cocoapods
 ```ruby
-source 'https://github.com/CocoaPods/Specs.git'
 platform :ios, '15.0'
 use_frameworks!
 
