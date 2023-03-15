@@ -35,7 +35,7 @@ Register for API key from [OpenAI](https://openai.com/api). Initialize with api 
 let api = ChatGPTAPI(apiKey: "API_KEY")
 ```
 
-optionally, you can provide the system prompt, temperature, and model. Default values for these parameters are:
+optionally, you can provide the system prompt, temperature, and model like so.
 ```swift
 public init(apiKey: String,
         model: String = "gpt-4",
