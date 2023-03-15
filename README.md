@@ -38,7 +38,7 @@ let api = ChatGPTAPI(apiKey: "API_KEY")
 optionally, you can provide the system prompt, temperature, and model. Default values for these parameters are:
 ```swift
 public init(apiKey: String,
-        model: String = "gpt-3.5-turbo",
+        model: String = "gpt-4",
         systemPrompt: String = "You are a helpful assistant",
         temperature: Double = 0.5)
 ```
