@@ -94,6 +94,15 @@ Default values for these parameters are:
 
 The client stores the history list of the conversation that will be included in the new prompt so ChatGPT aware of the previous context of conversation. When sending new prompt, the client will make sure the token is not exceeding 4000 (using calculation of 1 token=4chars), in case it exceeded the token, some of previous conversations will be truncated. In future i will provide an API to specify the token threshold as new gpt-4 model accept much bigger 8k tokens in a prompt.
 
+
+### View Current History List
+
+You can view current history list from the `historyList` property.
+
+```swift
+print(api.historyList)
+```
+
 ### Delete History List
 
 You can also delete the history list by invoking

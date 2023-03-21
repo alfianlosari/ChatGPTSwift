@@ -23,7 +23,7 @@ public class ChatGPTAPI: @unchecked Sendable {
     
     private let urlString = "https://api.openai.com/v1/chat/completions"
     private let apiKey: String
-    private var historyList = [Message]()
+    public private(set) var historyList = [Message]()
 
     let dateFormatter: DateFormatter = {
         let df = DateFormatter()
