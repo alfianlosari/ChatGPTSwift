@@ -7,9 +7,14 @@
 
 import Foundation
 
-struct Message: Codable {
-    let role: String
-    let content: String
+public struct Message: Codable {
+    public let role: String
+    public let content: String
+    
+    init(role: String, content: String) {
+        self.role = role
+        self.content = content
+    }
 }
 
 extension Array where Element == Message {

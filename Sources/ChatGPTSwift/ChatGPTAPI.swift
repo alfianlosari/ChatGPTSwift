@@ -15,9 +15,11 @@ import Foundation
 
 public class ChatGPTAPI: @unchecked Sendable {
     
-    private let systemMessage: Message
-    private let temperature: Double
-    private let model: String
+    public enum Constants {
+        public static let defaultModel = "gpt-3.5-turbo"
+        public static let defaultSystemText = "You're a helpful assistant"
+        public static let defaultTemperature = 0.5
+    }
     
     private let urlString = "https://api.openai.com/v1/chat/completions"
     private let apiKey: String
@@ -42,29 +44,27 @@ public class ChatGPTAPI: @unchecked Sendable {
         ]
     }
     
-    public init(apiKey: String,
-         model: String = "gpt-3.5-turbo",
-         systemPrompt: String = "You are a helpful assistant",
-         temperature: Double = 0.5) {
-        self.apiKey = apiKey
-        self.model = model
-        self.systemMessage = .init(role: "system", content: systemPrompt)
-        self.temperature = temperature
+    private func systemMessage(content: String) -> Message {
+        .init(role: "system", content: content)
     }
     
-    private func generateMessages(from text: String) -> [Message] {
-        var messages = [systemMessage] + historyList + [Message(role: "user", content: text)]
+    public init(apiKey: String) {
+        self.apiKey = apiKey
+    }
+    
+    private func generateMessages(from text: String, systemText: String) -> [Message] {
+        var messages = [systemMessage(content: systemText)] + historyList + [Message(role: "user", content: text)]
         if messages.contentCount > (4000 * 4) {
             _ = historyList.dropFirst()
-            messages = generateMessages(from: text)
+            messages = generateMessages(from: text, systemText: systemText)
         }
         return messages
     }
     
-    private func jsonBody(text: String, stream: Bool = true) throws -> Data {
+    private func jsonBody(text: String, model: String, systemText: String, temperature: Double, stream: Bool = true) throws -> Data {
         let request = Request(model: model,
                         temperature: temperature,
-                        messages: generateMessages(from: text),
+                        messages: generateMessages(from: text, systemText: systemText),
                         stream: stream)
         return try JSONEncoder().encode(request)
     }
@@ -127,9 +127,12 @@ public class ChatGPTAPI: @unchecked Sendable {
         }
     }
 
-    public func sendMessage(text: String) async throws -> String {
+    public func sendMessage(text: String,
+                            model: String = ChatGPTAPI.Constants.defaultModel,
+                            systemText: String = ChatGPTAPI.Constants.defaultSystemText,
+                            temperature: Double = ChatGPTAPI.Constants.defaultTemperature) async throws -> String {
         var request = self.clientRequest
-        request.body = .bytes(try jsonBody(text: text, stream: false))
+        request.body = .bytes(try jsonBody(text: text, model: model, systemText: systemText, temperature: temperature, stream: false))
         
         let response = try await httpClient.execute(request, timeout: .seconds(25))
 
@@ -173,9 +176,12 @@ public class ChatGPTAPI: @unchecked Sendable {
         return urlRequest
     }
 
-    public func sendMessageStream(text: String) async throws -> AsyncThrowingStream<String, Error> {
+    public func sendMessageStream(text: String,
+                                  model: String = ChatGPTAPI.Constants.defaultModel,
+                                  systemText: String = ChatGPTAPI.Constants.defaultSystemText,
+                                  temperature: Double = ChatGPTAPI.Constants.defaultTemperature) async throws -> AsyncThrowingStream<String, Error> {
         var urlRequest = self.urlRequest
-        urlRequest.httpBody = try jsonBody(text: text)
+        urlRequest.httpBody = try jsonBody(text: text, model: model, systemText: systemText, temperature: temperature)
         let (result, response) = try await urlSession.bytes(for: urlRequest)
         
         guard let httpResponse = response as? HTTPURLResponse else {
@@ -215,9 +221,12 @@ public class ChatGPTAPI: @unchecked Sendable {
         }
     }
 
-    public func sendMessage(text: String) async throws -> String {
+    public func sendMessage(text: String,
+                            model: String = ChatGPTAPI.Constants.defaultModel,
+                            systemText: String = ChatGPTAPI.Constants.defaultSystemText,
+                            temperature: Double = ChatGPTAPI.Constants.defaultTemperature) async throws -> String {
         var urlRequest = self.urlRequest
-        urlRequest.httpBody = try jsonBody(text: text, stream: false)
+        urlRequest.httpBody = try jsonBody(text: text, model: model, systemText: systemText, temperature: temperature, stream: false)
         
         let (data, response) = try await urlSession.data(for: urlRequest)
         
@@ -247,5 +256,10 @@ public class ChatGPTAPI: @unchecked Sendable {
     public func deleteHistoryList() {
         self.historyList.removeAll()
     }
+    
+    public func replaceHistoryList(with messages: [Message]) {
+        self.historyList = messages
+    }
+    
 }
 

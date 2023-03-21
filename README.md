@@ -35,14 +35,6 @@ Register for API key from [OpenAI](https://openai.com/api). Initialize with api 
 let api = ChatGPTAPI(apiKey: "API_KEY")
 ```
 
-optionally, you can provide the system prompt, temperature, and model like so.
-```swift
-public init(apiKey: String,
-        model: String = "gpt-4",
-        systemPrompt: String = "You are a helpful assistant",
-        temperature: Double = 0.5)
-```
-
 To learn more about those parameters, you can visit the official [ChatGPT API documentation](https://platform.openai.com/docs/guides/chat/introduction) and [ChatGPT API Introduction Page](https://openai.com/blog/introducing-chatgpt-and-whisper-apis)
 
 ## Usage
@@ -81,17 +73,49 @@ Task {
         
 ```
 
+### Providing extra parameters
+
+Optionally, you can provide the model, system prompt, temperature, and model like so.
+
+```swift
+let response = try await api.sendMessage(text: "What is ChatGPT?",
+                                         model: "gpt-4",
+                                         systemPrompt: "You are a CS Professor",
+                                         temperature: 0.5)
+```
+
+Default values for these parameters are:
+- model: `gpt-3.5-turbo`
+- systemPrompt: `You're a helpful assistant`
+- temperature: `0.5`
+
+
 ## History List
 
-The client stores the history list of the conversation that will be included in the new prompt so ChatGPT aware of the previous context of conversation. When sending new prompt, the client will make sure the token is not exceeding 4000 (using calculation of 1 token=4chars), in case it exceeded the token, some of previous conversations will be truncated
+The client stores the history list of the conversation that will be included in the new prompt so ChatGPT aware of the previous context of conversation. When sending new prompt, the client will make sure the token is not exceeding 4000 (using calculation of 1 token=4chars), in case it exceeded the token, some of previous conversations will be truncated. In future i will provide an API to specify the token threshold as new gpt-4 model accept much bigger 8k tokens in a prompt.
+
+### Delete History List
 
 You can also delete the history list by invoking
+
 ```swift
 api.deleteHistoryList()
 ```
 
-You should not call this, while waiting for the response from ChatGPT. I'll need to handle this properly in later release/
+### Replace History List
 
+You can provide your own History List, this will replace the stored history list. Remember not pass the 4000 tokens threshold.
+
+```swift
+let myHistoryList = [
+    Message(role: "user", content: "who is james bond?")
+    Message(role: "assistant", content: "secret british agent with codename 007"),
+    Message(role: "user", content: "which one is the latest movie?"),
+    Message(role: "assistant", content: "It's No Time to Die played by Daniel Craig")
+]
+
+api.replaceHistoryList(with: myHistoryList)
+```
 
 ## Demo Apps
 You can check the demo apps for iOS and macOS from the [SwiftUIChatGPT repo](https://github.com/alfianlosari/ChatGPTSwiftUI)
