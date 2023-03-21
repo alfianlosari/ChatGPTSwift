@@ -113,7 +113,7 @@ api.deleteHistoryList()
 
 ### Replace History List
 
-You can provide your own History List, this will replace the stored history list. Remember not pass the 4000 tokens threshold.
+You can provide your own History List, this will replace the stored history list. Remember not to pass the 4000 tokens threshold.
 
 ```swift
 let myHistoryList = [
