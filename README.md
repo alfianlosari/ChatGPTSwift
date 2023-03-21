@@ -35,8 +35,6 @@ Register for API key from [OpenAI](https://openai.com/api). Initialize with api 
 let api = ChatGPTAPI(apiKey: "API_KEY")
 ```
 
-To learn more about those parameters, you can visit the official [ChatGPT API documentation](https://platform.openai.com/docs/guides/chat/introduction) and [ChatGPT API Introduction Page](https://openai.com/blog/introducing-chatgpt-and-whisper-apis)
-
 ## Usage
 
 There are 2 APIs: stream and normal
@@ -89,6 +87,7 @@ Default values for these parameters are:
 - systemPrompt: `You're a helpful assistant`
 - temperature: `0.5`
 
+To learn more about those parameters, you can visit the official [ChatGPT API documentation](https://platform.openai.com/docs/guides/chat/introduction) and [ChatGPT API Introduction Page](https://openai.com/blog/introducing-chatgpt-and-whisper-apis)
 
 ## History List
 
