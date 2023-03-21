@@ -23,7 +23,7 @@ platform :ios, '15.0'
 use_frameworks!
 
 target 'MyApp' do
-  pod 'ChatGPTSwift', '~> 1.2.1'
+  pod 'ChatGPTSwift', '~> 1.2.2'
 end
 ```
 
