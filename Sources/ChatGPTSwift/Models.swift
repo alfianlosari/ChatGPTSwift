@@ -20,6 +20,7 @@ public struct Message: Codable {
 extension Array where Element == Message {
     
     var contentCount: Int { map { $0.content }.count }
+    var content: String { reduce("") { $0 + $1.content } }
 }
 
 struct Request: Codable {

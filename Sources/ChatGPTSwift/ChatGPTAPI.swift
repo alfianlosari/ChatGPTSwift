@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import GPTEncoder
 
 #if os(Linux)
     import AsyncHTTPClient
@@ -23,6 +24,7 @@ public class ChatGPTAPI: @unchecked Sendable {
     
     private let urlString = "https://api.openai.com/v1/chat/completions"
     private let apiKey: String
+    private let gptEncoder = GPTEncoder()
     public private(set) var historyList = [Message]()
 
     let dateFormatter: DateFormatter = {
@@ -54,7 +56,7 @@ public class ChatGPTAPI: @unchecked Sendable {
     
     private func generateMessages(from text: String, systemText: String) -> [Message] {
         var messages = [systemMessage(content: systemText)] + historyList + [Message(role: "user", content: text)]
-        if messages.contentCount > (4000 * 4) {
+        if gptEncoder.encode(text: messages.content).count > 4096  {
             _ = historyList.dropFirst()
             messages = generateMessages(from: text, systemText: systemText)
         }

@@ -10,6 +10,15 @@
       }
     },
     {
+      "identity" : "gptencoder",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/alfianlosari/GPTEncoder.git",
+      "state" : {
+        "revision" : "5d6a79c1cb5802e2ddc7fa2eab4182a120db8dd4",
+        "version" : "1.0.0"
+      }
+    },
+    {
       "identity" : "swift-atomics",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-atomics.git",

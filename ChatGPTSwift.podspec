@@ -1,7 +1,7 @@
 Pod::Spec.new do |s|
 
     s.name         = "ChatGPTSwift"
-    s.version      = "1.2.3"
+    s.version      = "1.3.0"
     s.summary      = "A Swift Client to interact with OpenAI Public ChatGPT API"
   
     s.description  = <<-DESC
@@ -25,6 +25,7 @@ Pod::Spec.new do |s|
   
     s.source       = { :git => "https://github.com/alfianlosari/ChatGPTSwift.git", :tag => s.version }
     s.source_files  = ["Sources/ChatGPTSwift/**/*.swift"]
+    s.dependency 'GPTEncoder', '1.0.0'
   
     s.requires_arc = true
   end

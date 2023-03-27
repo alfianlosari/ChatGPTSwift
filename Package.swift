@@ -13,7 +13,8 @@ let package = Package(
             targets: ["ChatGPTSwift"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/swift-server/async-http-client.git", from: "1.9.0")
+        .package(url: "https://github.com/swift-server/async-http-client.git", from: "1.9.0"),
+        .package(url: "https://github.com/alfianlosari/GPTEncoder.git", exact: "1.0.0")
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -22,7 +23,7 @@ let package = Package(
             name: "ChatGPTSwift",
             dependencies: [
                 .product(name: "AsyncHTTPClient", package: "async-http-client", condition: .when(platforms: [.linux])),
-
+                .product(name: "GPTEncoder", package: "GPTEncoder")
             ]),
         .testTarget(
             name: "ChatGPTSwiftTests",
