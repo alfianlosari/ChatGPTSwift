@@ -14,8 +14,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/alfianlosari/GPTEncoder.git",
       "state" : {
-        "revision" : "5d6a79c1cb5802e2ddc7fa2eab4182a120db8dd4",
-        "version" : "1.0.0"
+        "revision" : "a57eb55b8305ad6b4f564286b0fadff439805cf5",
+        "version" : "1.0.1"
       }
     },
     {
