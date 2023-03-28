@@ -57,7 +57,7 @@ public class ChatGPTAPI: @unchecked Sendable {
     private func generateMessages(from text: String, systemText: String) -> [Message] {
         var messages = [systemMessage(content: systemText)] + historyList + [Message(role: "user", content: text)]
         if gptEncoder.encode(text: messages.content).count > 4096  {
-            _ = historyList.dropFirst()
+            _ = historyList.removeFirst()
             messages = generateMessages(from: text, systemText: systemText)
         }
         return messages
