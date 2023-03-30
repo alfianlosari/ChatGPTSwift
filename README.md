@@ -78,13 +78,13 @@ Optionally, you can provide the model, system prompt, temperature, and model lik
 ```swift
 let response = try await api.sendMessage(text: "What is ChatGPT?",
                                          model: "gpt-4",
-                                         systemPrompt: "You are a CS Professor",
+                                         systemText: "You are a CS Professor",
                                          temperature: 0.5)
 ```
 
 Default values for these parameters are:
 - model: `gpt-3.5-turbo`
-- systemPrompt: `You're a helpful assistant`
+- systemText: `You're a helpful assistant`
 - temperature: `0.5`
 
 To learn more about those parameters, you can visit the official [ChatGPT API documentation](https://platform.openai.com/docs/guides/chat/introduction) and [ChatGPT API Introduction Page](https://openai.com/blog/introducing-chatgpt-and-whisper-apis)
