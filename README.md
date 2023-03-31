@@ -131,5 +131,7 @@ I've also created [GPTEncoder](https://github.com/alfianlosari/GPTEncoder) Swift
 ## GPT Tokenizer UI Lib
 I've also created [GPTTokenizerUI](https://github.com/alfianlosari/GPTTokenizerUI), a SPM lib you can integrate in your app for providing GUI to input text and show the tokenization results used by GPT API.
 
+![Alt text](https://imagizer.imageshack.com/v2/640x480q70/922/CEVvrE.png "image")
+
 ## Demo Apps
 You can check the demo apps for iOS and macOS from the [SwiftUIChatGPT repo](https://github.com/alfianlosari/ChatGPTSwiftUI)
