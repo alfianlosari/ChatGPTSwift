@@ -125,5 +125,11 @@ let myHistoryList = [
 api.replaceHistoryList(with: myHistoryList)
 ```
 
+## GPT Encoder Lib
+I've also created [GPTEncoder](https://github.com/alfianlosari/GPTEncoder) Swift BPE Encoder/Decoder for OpenAI GPT Models. A programmatic interface for tokenizing text for OpenAI GPT API.
+
+## GPT Tokenizer UI Lib
+I've also created [GPTTokenizerUI](https://github.com/alfianlosari/GPTTokenizerUI), a SPM lib you can integrate in your app for providing GUI to input text and show the tokenization results used by GPT API.
+
 ## Demo Apps
 You can check the demo apps for iOS and macOS from the [SwiftUIChatGPT repo](https://github.com/alfianlosari/ChatGPTSwiftUI)
