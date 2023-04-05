@@ -22,7 +22,7 @@ public class ChatGPTAPI: @unchecked Sendable {
         public static let defaultTemperature = 0.5
         public static let defaultResponseType: ResponseType = .chunk
     }
-    
+
     public enum ResponseType {
         case full
         case chunk
@@ -139,12 +139,12 @@ public class ChatGPTAPI: @unchecked Sendable {
         request.body = .bytes(try jsonBody(text: text, model: model, systemText: systemText, temperature: temperature, stream: false))
         
         let response = try await httpClient.execute(request, timeout: .seconds(25))
-        
+
         var data = Data()
         for try await buffer in response.body {
             data.append(.init(buffer: buffer))
         }
-        
+
         guard response.status == .ok else {
             var error = "Bad Response: \(response.status.code)"
             if data.count > 0, let errorResponse = try? jsonDecoder.decode(ErrorRootResponse.self, from: data).error {
