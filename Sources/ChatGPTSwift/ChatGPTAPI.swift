@@ -87,16 +87,17 @@ public class ChatGPTAPI: @unchecked Sendable {
         return request
     }
 
-
     public func sendMessageStream(text: String) async throws -> AsyncThrowingStream<String, Error> {
          var request = self.clientRequest
         request.body = .bytes(try jsonBody(text: text, stream: true))
         
         let response = try await httpClient.execute(request, timeout: .seconds(25))
+        try Task.checkCancellation()
 
         guard response.status == .ok else {
             var data = Data()
             for try await buffer in response.body {
+                try Task.checkCancellation()
                 data.append(.init(buffer: buffer))
             }
             var error = "Bad Response: \(response.status.code)"
@@ -106,26 +107,22 @@ public class ChatGPTAPI: @unchecked Sendable {
             throw error
         }
         
-        return AsyncThrowingStream<String, Error> {  continuation in
-            Task(priority: .userInitiated) { [weak self] in
-                do {
-                    var responseText = ""
-                    for try await buffer in response.body {
-                        let line = String(buffer: buffer)
-                        if line.hasPrefix("data: "),
-                           let data = line.dropFirst(6).data(using: .utf8),
-                           let response = try? self?.jsonDecoder.decode(StreamCompletionResponse.self, from: data),
-                           let text = response.choices.first?.delta.content {
-                            responseText += text
-                            continuation.yield(text)
-                        }
-                    }
-                    self?.appendToHistoryList(userText: text, responseText: responseText)
-                    continuation.finish()
-                } catch {
-                    continuation.finish(throwing: error)
+        var responseText = ""
+        return AsyncThrowingStream { [weak self] in
+            guard let self else { return nil }
+            for try await buffer in response.body {
+                try Task.checkCancellation()
+                let line = String(buffer: buffer)
+                if line.hasPrefix("data: "),
+                   let data = line.dropFirst(6).data(using: .utf8),
+                   let response = try? self?.jsonDecoder.decode(StreamCompletionResponse.self, from: data),
+                   let text = response.choices.first?.delta.content {
+                    responseText += text
+                    return text
                 }
             }
+            self.appendToHistoryList(userText: text, responseText: responseText)
+            return nil
         }
     }
 
@@ -137,9 +134,10 @@ public class ChatGPTAPI: @unchecked Sendable {
         request.body = .bytes(try jsonBody(text: text, model: model, systemText: systemText, temperature: temperature, stream: false))
         
         let response = try await httpClient.execute(request, timeout: .seconds(25))
-
+        try Task.checkCancellation()
         var data = Data()
         for try await buffer in response.body {
+            try Task.checkCancellation()
             data.append(.init(buffer: buffer))
         }
 
@@ -185,6 +183,7 @@ public class ChatGPTAPI: @unchecked Sendable {
         var urlRequest = self.urlRequest
         urlRequest.httpBody = try jsonBody(text: text, model: model, systemText: systemText, temperature: temperature)
         let (result, response) = try await urlSession.bytes(for: urlRequest)
+        try Task.checkCancellation()
         
         guard let httpResponse = response as? HTTPURLResponse else {
             throw "Invalid response"
@@ -193,7 +192,8 @@ public class ChatGPTAPI: @unchecked Sendable {
         guard 200...299 ~= httpResponse.statusCode else {
             var errorText = ""
             for try await line in result.lines {
-               errorText += line
+                try Task.checkCancellation()
+                errorText += line
             }
             if let data = errorText.data(using: .utf8), let errorResponse = try? jsonDecoder.decode(ErrorRootResponse.self, from: data).error {
                 errorText = "\n\(errorResponse.message)"
@@ -201,25 +201,22 @@ public class ChatGPTAPI: @unchecked Sendable {
             throw "Bad Response: \(httpResponse.statusCode). \(errorText)"
         }
         
-        return AsyncThrowingStream<String, Error> {  continuation in
-            Task(priority: .userInitiated) { [weak self] in
-                do {
-                    var responseText = ""
-                    for try await line in result.lines {
-                        if line.hasPrefix("data: "),
-                           let data = line.dropFirst(6).data(using: .utf8),
-                           let response = try? self?.jsonDecoder.decode(StreamCompletionResponse.self, from: data),
-                           let text = response.choices.first?.delta.content {
-                            responseText += text
-                            continuation.yield(text)
-                        }
-                    }
-                    self?.appendToHistoryList(userText: text, responseText: responseText)
-                    continuation.finish()
-                } catch {
-                    continuation.finish(throwing: error)
+        
+        var responseText = ""
+        return AsyncThrowingStream { [weak self] in
+            guard let self else { return nil }
+            for try await line in result.lines {
+                try Task.checkCancellation()
+                if line.hasPrefix("data: "),
+                   let data = line.dropFirst(6).data(using: .utf8),
+                   let response = try? self.jsonDecoder.decode(StreamCompletionResponse.self, from: data),
+                   let text = response.choices.first?.delta.content {
+                    responseText += text
+                    return text
                 }
             }
+            self.appendToHistoryList(userText: text, responseText: responseText)
+            return nil
         }
     }
 
@@ -231,7 +228,7 @@ public class ChatGPTAPI: @unchecked Sendable {
         urlRequest.httpBody = try jsonBody(text: text, model: model, systemText: systemText, temperature: temperature, stream: false)
         
         let (data, response) = try await urlSession.data(for: urlRequest)
-        
+        try Task.checkCancellation()
         guard let httpResponse = response as? HTTPURLResponse else {
             throw "Invalid response"
         }
