@@ -1,7 +1,7 @@
 Pod::Spec.new do |s|
 
     s.name         = "ChatGPTSwift"
-    s.version      = "1.3.1"
+    s.version      = "1.4.0"
     s.summary      = "A Swift Client to interact with OpenAI Public ChatGPT API"
   
     s.description  = <<-DESC
