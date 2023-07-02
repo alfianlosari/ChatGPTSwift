@@ -115,7 +115,7 @@ public class ChatGPTAPI: @unchecked Sendable {
                 let line = String(buffer: buffer)
                 if line.hasPrefix("data: "),
                    let data = line.dropFirst(6).data(using: .utf8),
-                   let response = try? self?.jsonDecoder.decode(StreamCompletionResponse.self, from: data),
+                   let response = try? self.jsonDecoder.decode(StreamCompletionResponse.self, from: data),
                    let text = response.choices.first?.delta.content {
                     responseText += text
                     return text
