@@ -63,7 +63,12 @@ public class ChatGPTAPI: @unchecked Sendable {
         return messages
     }
     
-    private func jsonBody(text: String, model: String, systemText: String = ChatGPTAPI.Constants.defaultSystemText, temperature: Double = ChatGPTAPI.Constants.defaultTemperature, stream: Bool = true) throws -> Data {
+    private func jsonBody(
+        text: String,
+        model: String = ChatGPTAPI.Constants.defaultModel,
+        systemText: String = ChatGPTAPI.Constants.defaultSystemText,
+        temperature: Double = ChatGPTAPI.Constants.defaultTemperature,
+        stream: Bool = true) throws -> Data {
         let request = Request(model: model,
                         temperature: temperature,
                         messages: generateMessages(from: text, systemText: systemText),
