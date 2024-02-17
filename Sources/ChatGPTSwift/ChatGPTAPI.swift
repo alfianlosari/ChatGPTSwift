@@ -63,8 +63,9 @@ public class ChatGPTAPI: @unchecked Sendable {
         return messages
     }
     
-    private func jsonBody(text: String, model: String, systemText: String, temperature: Double, stream: Bool = true) throws -> Data {
+    private func jsonBody(text: String, model: String, stop: String, systemText: String, temperature: Double, stream: Bool = true) throws -> Data {
         let request = Request(model: model,
+                        stop: stop,
                         temperature: temperature,
                         messages: generateMessages(from: text, systemText: systemText),
                         stream: stream)
@@ -178,10 +179,11 @@ public class ChatGPTAPI: @unchecked Sendable {
 
     public func sendMessageStream(text: String,
                                   model: String = ChatGPTAPI.Constants.defaultModel,
+                                  stop: String = "",
                                   systemText: String = ChatGPTAPI.Constants.defaultSystemText,
                                   temperature: Double = ChatGPTAPI.Constants.defaultTemperature) async throws -> AsyncThrowingStream<String, Error> {
         var urlRequest = self.urlRequest
-        urlRequest.httpBody = try jsonBody(text: text, model: model, systemText: systemText, temperature: temperature)
+        urlRequest.httpBody = try jsonBody(text: text, model: model, stop: stop, systemText: systemText, temperature: temperature)
         let (result, response) = try await urlSession.bytes(for: urlRequest)
         try Task.checkCancellation()
         
@@ -222,11 +224,11 @@ public class ChatGPTAPI: @unchecked Sendable {
 
     public func sendMessage(text: String,
                             model: String = ChatGPTAPI.Constants.defaultModel,
+                            stop: String = "",
                             systemText: String = ChatGPTAPI.Constants.defaultSystemText,
                             temperature: Double = ChatGPTAPI.Constants.defaultTemperature) async throws -> String {
         var urlRequest = self.urlRequest
-        urlRequest.httpBody = try jsonBody(text: text, model: model, systemText: systemText, temperature: temperature, stream: false)
-        
+        urlRequest.httpBody = try jsonBody(text: text, model: model, stop: stop, systemText: systemText, temperature: temperature, stream: false)
         let (data, response) = try await urlSession.data(for: urlRequest)
         try Task.checkCancellation()
         guard let httpResponse = response as? HTTPURLResponse else {
