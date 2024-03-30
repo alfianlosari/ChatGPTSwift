@@ -87,9 +87,12 @@ public class ChatGPTAPI: @unchecked Sendable {
         return request
     }
 
-    public func sendMessageStream(text: String) async throws -> AsyncThrowingStream<String, Error> {
+    public func sendMessageStream(text: String,  
+                            model: String = ChatGPTAPI.Constants.defaultModel,
+                            systemText: String = ChatGPTAPI.Constants.defaultSystemText,
+                            temperature: Double = ChatGPTAPI.Constants.defaultTemperature) async throws -> AsyncThrowingStream<String, Error> {
          var request = self.clientRequest
-        request.body = .bytes(try jsonBody(text: text, stream: true))
+        request.body = .bytes(try jsonBody(text: text, model: model, systemText: systemText, temperature: temperature, stream: true))
         
         let response = try await httpClient.execute(request, timeout: .seconds(25))
         try Task.checkCancellation()
