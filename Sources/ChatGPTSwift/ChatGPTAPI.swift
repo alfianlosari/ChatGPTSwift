@@ -114,8 +114,9 @@ public class ChatGPTAPI: @unchecked Sendable {
         let streams: AsyncThrowingStream<String, Error> = AsyncThrowingStream { continuation in
             Task {
                 do {
-                    for try await line in result.lines {
+                    for try await buffer in response.body {
                         try Task.checkCancellation()
+                        let line = String(buffer: buffer)
                         continuation.yield(line)
                     }
                     continuation.finish()
