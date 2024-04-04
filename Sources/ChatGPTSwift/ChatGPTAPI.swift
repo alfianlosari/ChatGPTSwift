@@ -9,9 +9,7 @@ import Foundation
 import GPTEncoder
 
 #if os(Linux)
-    import AsyncHTTPClient
     import FoundationNetworking
-    import NIOFoundationCompat
 #endif
 
 public class ChatGPTAPI: @unchecked Sendable {
@@ -20,6 +18,15 @@ public class ChatGPTAPI: @unchecked Sendable {
         public static let defaultModel = "gpt-3.5-turbo"
         public static let defaultSystemText = "You're a helpful assistant"
         public static let defaultTemperature = 0.5
+    }
+
+    private let urlSession = URLSession.shared
+    private var urlRequest: URLRequest {
+        let url = URL(string: urlString)!
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+        headers.forEach {  urlRequest.setValue($1, forHTTPHeaderField: $0) }
+        return urlRequest
     }
     
     private let urlString = "https://api.openai.com/v1/chat/completions"
@@ -76,91 +83,43 @@ public class ChatGPTAPI: @unchecked Sendable {
         self.historyList.append(Message(role: "assistant", content: responseText))
     }
     
-    #if os(Linux)
-    private let httpClient = HTTPClient(eventLoopGroupProvider: .createNew)
-    private var clientRequest: HTTPClientRequest {
-        var request = HTTPClientRequest(url: urlString)
-        request.method = .POST
-        headers.forEach {
-            request.headers.add(name: $0.key, value: $0.value)
-        }
-        return request
-    }
-
+    #if os(Linux)   
     public func sendMessageStream(text: String,  
                             model: String = ChatGPTAPI.Constants.defaultModel,
                             systemText: String = ChatGPTAPI.Constants.defaultSystemText,
                             temperature: Double = ChatGPTAPI.Constants.defaultTemperature) async throws -> AsyncThrowingStream<String, Error> {
-         var request = self.clientRequest
-        request.body = .bytes(try jsonBody(text: text, model: model, systemText: systemText, temperature: temperature, stream: true))
-        
-        let response = try await httpClient.execute(request, timeout: .seconds(25))
-        try Task.checkCancellation()
+       AsyncThrowingStream { continuation in
+			Task {
+				var urlRequest = self.urlRequest
+				urlRequest.httpBody = try jsonBody(text: text, model: model, systemText: systemText, temperature: temperature)
 
-        guard response.status == .ok else {
-            var data = Data()
-            for try await buffer in response.body {
-                try Task.checkCancellation()
-                data.append(.init(buffer: buffer))
-            }
-            var error = "Bad Response: \(response.status.code)"
-            if data.count > 0, let errorResponse = try? jsonDecoder.decode(ErrorRootResponse.self, from: data).error {
-                error.append("\n\(errorResponse.message)")
-            }
-            throw error
-        }
-        
-        var responseText = ""
-        let streams: AsyncThrowingStream<String, Error> = AsyncThrowingStream { continuation in
-            Task {
-                do {
-                    for try await buffer in response.body {
-                        try Task.checkCancellation()
-                        let line = String(buffer: buffer)
-                        continuation.yield(line)
-                    }
-                    continuation.finish()
-                } catch {
-                    continuation.finish(throwing: error)
-                }
-            }
-        }
-        
-        return AsyncThrowingStream { [weak self] in
-            guard let self else { return nil }
-            for try await line in streams {
-                try Task.checkCancellation()
-                if line.hasPrefix("data: "),
-                   let data = line.dropFirst(6).data(using: .utf8),
-                   let response = try? self.jsonDecoder.decode(StreamCompletionResponse.self, from: data),
-                   let text = response.choices.first?.delta.content {
-                    responseText += text
-                    return text
-                }
-            }
-            self.appendToHistoryList(userText: text, responseText: responseText)
-            return nil
-        }
+				let sessionDelegate = URLSessionDelegateStream<StreamCompletionResponse>(jsonDecoder: self.jsonDecoder, continuation: continuation)  
+				let session = URLSession(configuration: .default, delegate: sessionDelegate, delegateQueue: nil)
+				let dataTask = session.dataTask(with: urlRequest)
+				dataTask.resume()
+				continuation.onTermination = { @Sendable status in
+					DispatchQueue.main.async { dataTask.cancel() }
+				}
+			}    
+		} 
     }
 
     public func sendMessage(text: String,
                             model: String = ChatGPTAPI.Constants.defaultModel,
                             systemText: String = ChatGPTAPI.Constants.defaultSystemText,
                             temperature: Double = ChatGPTAPI.Constants.defaultTemperature) async throws -> String {
-        var request = self.clientRequest
-        request.body = .bytes(try jsonBody(text: text, model: model, systemText: systemText, temperature: temperature, stream: false))
+        var urlRequest = self.urlRequest
+        urlRequest.httpBody = try jsonBody(text: text, model: model, systemText: systemText, temperature: temperature, stream: false)
         
-        let response = try await httpClient.execute(request, timeout: .seconds(25))
+        let (data, response) = try await urlSession.data(for: urlRequest)
         try Task.checkCancellation()
-        var data = Data()
-        for try await buffer in response.body {
-            try Task.checkCancellation()
-            data.append(.init(buffer: buffer))
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw "Invalid response"
         }
-
-        guard response.status == .ok else {
-            var error = "Bad Response: \(response.status.code)"
-            if data.count > 0, let errorResponse = try? jsonDecoder.decode(ErrorRootResponse.self, from: data).error {
+        
+        guard 200...299 ~= httpResponse.statusCode else {
+            var error = "Bad Response: \(httpResponse.statusCode)"
+            if let errorResponse = try? jsonDecoder.decode(ErrorRootResponse.self, from: data).error {
                 error.append("\n\(errorResponse.message)")
             }
             throw error
@@ -176,22 +135,7 @@ public class ChatGPTAPI: @unchecked Sendable {
         }
         
     }
-
-    deinit {
-        let client = self.httpClient
-        Task.detached { try await client.shutdown() }
-        
-    }
     #else
-
-    private let urlSession = URLSession.shared
-    private var urlRequest: URLRequest {
-        let url = URL(string: urlString)!
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "POST"
-        headers.forEach {  urlRequest.setValue($1, forHTTPHeaderField: $0) }
-        return urlRequest
-    }
 
     public func sendMessageStream(text: String,
                                   model: String = ChatGPTAPI.Constants.defaultModel,
