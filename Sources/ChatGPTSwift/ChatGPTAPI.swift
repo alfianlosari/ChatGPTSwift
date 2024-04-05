@@ -227,6 +227,77 @@ public class ChatGPTAPI: @unchecked Sendable {
     }
     #endif
     
+    @discardableResult
+    public func sendMessage(text: String,
+                            model: String = ChatGPTAPI.Constants.defaultModel,
+                            systemText: String = ChatGPTAPI.Constants.defaultSystemText,
+                            temperature: Double = ChatGPTAPI.Constants.defaultTemperature,
+                            completion: @escaping (Result<String, Error>) -> Void) -> URLSessionTask {
+        var urlRequest = self.urlRequest
+        do {
+            urlRequest.httpBody = try jsonBody(text: text, model: model, systemText: systemText, temperature: temperature, stream: false)
+        } catch {
+            completion(.failure(error))
+        }
+        
+        let dataTask = urlSession.dataTask(with: urlRequest) { [weak self] data, response, error in
+            guard let self else { return }
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                completion(.failure("Invalid Response"))
+                return
+            }
+            
+            guard let data = data else {
+                completion(.failure("Invalid Data"))
+                return
+            }
+            
+            guard 200...299 ~= httpResponse.statusCode else {
+                var error = "Bad Response: \(httpResponse.statusCode)"
+                if let errorResponse = try? self.jsonDecoder.decode(ErrorRootResponse.self, from: data).error {
+                    error.append("\n\(errorResponse.message)")
+                }
+                completion(.failure("Invalid Data"))
+                return
+            }
+            
+            do {
+                let completionResponse = try self.jsonDecoder.decode(CompletionResponse.self, from: data)
+                let responseText = completionResponse.choices.first?.message.content ?? ""
+                self.appendToHistoryList(userText: text, responseText: responseText)
+                completion(.success(responseText))
+            } catch {
+                completion(.failure(error))
+            }
+        }
+        dataTask.resume()
+        return dataTask
+    }
+    
+    @discardableResult
+    public func sendMessageStream(text: String,
+                            model: String = ChatGPTAPI.Constants.defaultModel,
+                            systemText: String = ChatGPTAPI.Constants.defaultSystemText,
+                            temperature: Double = ChatGPTAPI.Constants.defaultTemperature,
+                            callback: @escaping (Result<StreamChunk, Error>) -> Void) -> URLSessionTask {
+        var urlRequest = self.urlRequest
+        do {
+            urlRequest.httpBody = try jsonBody(text: text, model: model, systemText: systemText, temperature: temperature)
+        } catch {
+            callback(.failure(error))
+        }
+        let sessionDelegate = URLSessionDelegateStreamChunk<StreamCompletionResponse>(jsonDecoder: self.jsonDecoder, callback: callback)
+        let session = URLSession(configuration: .default, delegate: sessionDelegate, delegateQueue: nil)
+        let dataTask = session.dataTask(with: urlRequest)
+        dataTask.resume()
+        return dataTask
+    }
+    
     public func deleteHistoryList() {
         self.historyList.removeAll()
     }
@@ -237,3 +308,7 @@ public class ChatGPTAPI: @unchecked Sendable {
     
 }
 
+public struct StreamChunk {
+    public var text: String
+    public var isFinished: Bool
+}
