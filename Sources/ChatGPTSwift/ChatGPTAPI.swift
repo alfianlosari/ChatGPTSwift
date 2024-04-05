@@ -291,7 +291,18 @@ public class ChatGPTAPI: @unchecked Sendable {
         } catch {
             callback(.failure(error))
         }
-        let sessionDelegate = URLSessionDelegateStreamChunk<StreamCompletionResponse>(jsonDecoder: self.jsonDecoder, callback: callback)
+        var responseText = ""
+        let sessionDelegate = URLSessionDelegateStreamChunk<StreamCompletionResponse>(jsonDecoder: self.jsonDecoder, callback: { [weak self] result in
+            guard let self else { return }
+            if case .success(let chunk) = result {
+                responseText += chunk.text
+                if chunk.isFinished {
+                    self.appendToHistoryList(userText: text, responseText: responseText)
+                }
+            }
+            callback(result)
+        })
+        
         let session = URLSession(configuration: .default, delegate: sessionDelegate, delegateQueue: nil)
         let dataTask = session.dataTask(with: urlRequest)
         dataTask.resume()
