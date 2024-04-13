@@ -1,0 +1,40 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug",
+            "program": "${workspaceFolder}/<executable file>",
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "sourceLanguages": [
+                "swift"
+            ],
+            "args": [],
+            "cwd": "${workspaceFolder:app}",
+            "name": "Debug SampleApp",
+            "program": "${workspaceFolder:app}/.build/debug/SampleApp",
+            "preLaunchTask": "swift: Build Debug SampleApp"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "sourceLanguages": [
+                "swift"
+            ],
+            "args": [],
+            "cwd": "${workspaceFolder:app}",
+            "name": "Release SampleApp",
+            "program": "${workspaceFolder:app}/.build/release/SampleApp",
+            "preLaunchTask": "swift: Build Release SampleApp"
+        }
+    ]
+}

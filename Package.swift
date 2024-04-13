@@ -7,22 +7,44 @@ let package = Package(
     name: "ChatGPTSwift",
     platforms: [.iOS(.v15), .macOS(.v12), .tvOS(.v15), .watchOS(.v8)],
     products: [
-        // Products define the executables and libraries a package produces, and make them visible to other packages.
         .library(
             name: "ChatGPTSwift",
             targets: ["ChatGPTSwift"]),
+        .executable(
+            name: "SampleApp",
+            targets: ["SampleApp"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/alfianlosari/GPTEncoder.git", exact: "1.0.4")
+        .package(url: "https://github.com/alfianlosari/GPTEncoder.git", exact: "1.0.4"),
+        .package(url: "https://github.com/apple/swift-openapi-generator", from: "1.0.0"),
+        .package(url: "https://github.com/apple/swift-openapi-runtime", from: "1.0.0"),
+        .package(url: "https://github.com/apple/swift-openapi-urlsession", from: "1.0.0"),
+        .package(url: "https://github.com/swift-server/swift-openapi-async-http-client", from: "1.0.0"),
+        .package(url: "https://github.com/apple/swift-http-types", from: "1.0.2"),
     ],
     targets: [
-        // Targets are the basic building blocks of a package. A target can define a module or a test suite.
-        // Targets can depend on other targets in this package, and on products in packages this package depends on.
         .target(
             name: "ChatGPTSwift",
             dependencies: [
-                .product(name: "GPTEncoder", package: "GPTEncoder")
-            ]),
+                .product(name: "GPTEncoder", package: "GPTEncoder"),
+                .product(name: "HTTPTypes", package: "swift-http-types"),
+                .product(name: "OpenAPIRuntime", package: "swift-openapi-runtime"),
+                .product(name: "OpenAPIURLSession", package: "swift-openapi-urlsession",
+                    condition: .when(platforms: [
+                        .iOS, .macCatalyst, .macOS, .tvOS, .visionOS, .watchOS
+                        ])),
+                .product(name: "OpenAPIAsyncHTTPClient", package: "swift-openapi-async-http-client",
+                    condition: .when(platforms: [.linux])
+                ),
+            ]
+            // plugins: [.plugin(name: "OpenAPIGenerator", package: "swift-openapi-generator")]
+            ),
+        .executableTarget(
+            name: "SampleApp",
+            dependencies: [
+                "ChatGPTSwift"
+            ]
+        ),
         .testTarget(
             name: "ChatGPTSwiftTests",
             dependencies: ["ChatGPTSwift"]),

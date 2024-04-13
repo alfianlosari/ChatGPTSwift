@@ -7,30 +7,22 @@
 
 import Foundation
 import GPTEncoder
-
+import OpenAPIRuntime
 #if os(Linux)
-    import FoundationNetworking
+import OpenAPIAsyncHTTPClient
+#else
+import OpenAPIURLSession
 #endif
 
 public class ChatGPTAPI: @unchecked Sendable {
     
     public enum Constants {
-        public static let defaultModel = "gpt-3.5-turbo"
         public static let defaultSystemText = "You're a helpful assistant"
         public static let defaultTemperature = 0.5
     }
 
-    private let urlSession = URLSession.shared
-    private var urlRequest: URLRequest {
-        let url = URL(string: urlString)!
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "POST"
-        headers.forEach {  urlRequest.setValue($1, forHTTPHeaderField: $0) }
-        return urlRequest
-    }
-    
-    private let urlString = "https://api.openai.com/v1/chat/completions"
-    private let apiKey: String
+    public let client: Client
+    private let urlString = "https://api.openai.com/v1"
     private let gptEncoder = GPTEncoder()
     public private(set) var historyList = [Message]()
 
@@ -39,26 +31,22 @@ public class ChatGPTAPI: @unchecked Sendable {
         df.dateFormat = "YYYY-MM-dd"
         return df
     }()
-    
-    private let jsonDecoder: JSONDecoder = {
-        let jsonDecoder = JSONDecoder()
-        jsonDecoder.keyDecodingStrategy = .convertFromSnakeCase
-        return jsonDecoder
-    }()
-    
-    private var headers: [String: String] {
-        [
-            "Content-Type": "application/json",
-            "Authorization": "Bearer \(apiKey)"
-        ]
-    }
-    
+
     private func systemMessage(content: String) -> Message {
         .init(role: "system", content: content)
     }
     
     public init(apiKey: String) {
-        self.apiKey = apiKey
+        let clientTransport: ClientTransport
+        #if os(Linux)
+        clientTransport = AsyncHTTPClientTransport()
+        #else
+        clientTransport = URLSessionTransport()
+        #endif
+
+        self.client = Client(serverURL: URL(string: self.urlString)!,
+            transport: clientTransport,
+            middlewares: [AuthMiddleware(apiKey: apiKey)])
     }
     
     private func generateMessages(from text: String, systemText: String) -> [Message] {
@@ -69,7 +57,14 @@ public class ChatGPTAPI: @unchecked Sendable {
         }
         return messages
     }
-    
+
+    private func generateInternalMessages(from text: String, systemText: String) -> [Components.Schemas.ChatCompletionRequestMessage] {
+        let messages = self.generateMessages(from: text, systemText: systemText)
+        return messages.map {
+            $0.role == "user" ? .ChatCompletionRequestUserMessage(.init(content: .case1($0.content), role: .user)) : .ChatCompletionRequestSystemMessage(.init(content: $0.content, role: .system))
+        }
+    }
+
     private func jsonBody(text: String, model: String, systemText: String, temperature: Double, stream: Bool = true) throws -> Data {
         let request = Request(model: model,
                         temperature: temperature,
@@ -78,236 +73,56 @@ public class ChatGPTAPI: @unchecked Sendable {
         return try JSONEncoder().encode(request)
     }
     
-    private func appendToHistoryList(userText: String, responseText: String) {
+    public func appendToHistoryList(userText: String, responseText: String) {
         self.historyList.append(Message(role: "user", content: userText))
         self.historyList.append(Message(role: "assistant", content: responseText))
     }
     
-    #if os(Linux)   
-    public func sendMessageStream(text: String,  
-                            model: String = ChatGPTAPI.Constants.defaultModel,
-                            systemText: String = ChatGPTAPI.Constants.defaultSystemText,
-                            temperature: Double = ChatGPTAPI.Constants.defaultTemperature) async throws -> AsyncThrowingStream<String, Error> {
-       AsyncThrowingStream { continuation in
-			Task {
-				var urlRequest = self.urlRequest
-				urlRequest.httpBody = try jsonBody(text: text, model: model, systemText: systemText, temperature: temperature)
-
-				let sessionDelegate = URLSessionDelegateStream<StreamCompletionResponse>(jsonDecoder: self.jsonDecoder, continuation: continuation)  
-				let session = URLSession(configuration: .default, delegate: sessionDelegate, delegateQueue: nil)
-				let dataTask = session.dataTask(with: urlRequest)
-				dataTask.resume()
-				continuation.onTermination = { @Sendable status in
-					DispatchQueue.main.async { dataTask.cancel() }
-				}
-			}    
-		} 
-    }
-
-    public func sendMessage(text: String,
-                            model: String = ChatGPTAPI.Constants.defaultModel,
-                            systemText: String = ChatGPTAPI.Constants.defaultSystemText,
-                            temperature: Double = ChatGPTAPI.Constants.defaultTemperature) async throws -> String {
-        var urlRequest = self.urlRequest
-        urlRequest.httpBody = try jsonBody(text: text, model: model, systemText: systemText, temperature: temperature, stream: false)
-        
-        let (data, response) = try await urlSession.data(for: urlRequest)
-        try Task.checkCancellation()
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw "Invalid response"
-        }
-        
-        guard 200...299 ~= httpResponse.statusCode else {
-            var error = "Bad Response: \(httpResponse.statusCode)"
-            if let errorResponse = try? jsonDecoder.decode(ErrorRootResponse.self, from: data).error {
-                error.append("\n\(errorResponse.message)")
-            }
-            throw error
-        }
-        
-        do {
-            let completionResponse = try self.jsonDecoder.decode(CompletionResponse.self, from: data)
-            let responseText = completionResponse.choices.first?.message.content ?? ""
-            self.appendToHistoryList(userText: text, responseText: responseText)
-            return responseText
-        } catch {
-            throw error
-        }
-        
-    }
-    #else
-
     public func sendMessageStream(text: String,
-                                  model: String = ChatGPTAPI.Constants.defaultModel,
+                                  model: Components.Schemas.CreateChatCompletionRequest.modelPayload.Value2Payload = .gpt_hyphen_4,
                                   systemText: String = ChatGPTAPI.Constants.defaultSystemText,
-                                  temperature: Double = ChatGPTAPI.Constants.defaultTemperature) async throws -> AsyncThrowingStream<String, Error> {
-        var urlRequest = self.urlRequest
-        urlRequest.httpBody = try jsonBody(text: text, model: model, systemText: systemText, temperature: temperature)
-        let (result, response) = try await urlSession.bytes(for: urlRequest)
-        try Task.checkCancellation()
-        
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw "Invalid response"
-        }
-        
-        guard 200...299 ~= httpResponse.statusCode else {
-            var errorText = ""
-            for try await line in result.lines {
-                try Task.checkCancellation()
-                errorText += line
-            }
-            if let data = errorText.data(using: .utf8), let errorResponse = try? jsonDecoder.decode(ErrorRootResponse.self, from: data).error {
-                errorText = "\n\(errorResponse.message)"
-            }
-            throw "Bad Response: \(httpResponse.statusCode). \(errorText)"
-        }
-        
-        
-        var responseText = ""
-        let streams: AsyncThrowingStream<String, Error> = AsyncThrowingStream { continuation in
-            Task {
-                do {
-                    for try await line in result.lines {
-                        try Task.checkCancellation()
-                        continuation.yield(line)
-                    }
-                    continuation.finish()
-                } catch {
-                    continuation.finish(throwing: error)
-                }
+                                  temperature: Double = ChatGPTAPI.Constants.defaultTemperature) async throws -> AsyncMapSequence<AsyncThrowingPrefixWhileSequence<AsyncThrowingMapSequence<ServerSentEventsDeserializationSequence<ServerSentEventsLineDeserializationSequence<HTTPBody>>, ServerSentEventWithJSONData<Components.Schemas.CreateChatCompletionStreamResponse>>>, String> {
+        let response = try await client.createChatCompletion(.init(headers: .init(accept: [.init(contentType: .text_event_hyphen_stream)]), body: .json(.init(
+            messages: self.generateInternalMessages(from: text, systemText: systemText),
+            model: .init(value1: nil, value2: model),
+            stream: true))))
+
+        let stream = try response.ok.body.text_event_hyphen_stream.asDecodedServerSentEventsWithJSONData(
+            of: Components.Schemas.CreateChatCompletionStreamResponse.self
+        )
+        .prefix { chunk in
+            if let choice = chunk.data?.choices.first {
+                return choice.finish_reason != .stop
+            } else {
+                throw "Invalid data"
             }
         }
-        
-        return AsyncThrowingStream { [weak self] in
-            guard let self else { return nil }
-            for try await line in streams {
-                try Task.checkCancellation()
-                if line.hasPrefix("data: "),
-                   let data = line.dropFirst(6).data(using: .utf8),
-                   let response = try? self.jsonDecoder.decode(StreamCompletionResponse.self, from: data),
-                   let text = response.choices.first?.delta.content {
-                    responseText += text
-                    return text
-                }
-            }
-            self.appendToHistoryList(userText: text, responseText: responseText)
-            return nil
-        }
+        .map{ $0.data?.choices.first?.delta.content ?? "" }
+        return stream
     }
 
     public func sendMessage(text: String,
-                            model: String = ChatGPTAPI.Constants.defaultModel,
+                            model: Components.Schemas.CreateChatCompletionRequest.modelPayload.Value2Payload = .gpt_hyphen_4,
                             systemText: String = ChatGPTAPI.Constants.defaultSystemText,
                             temperature: Double = ChatGPTAPI.Constants.defaultTemperature) async throws -> String {
-        var urlRequest = self.urlRequest
-        urlRequest.httpBody = try jsonBody(text: text, model: model, systemText: systemText, temperature: temperature, stream: false)
-        
-        let (data, response) = try await urlSession.data(for: urlRequest)
-        try Task.checkCancellation()
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw "Invalid response"
-        }
-        
-        guard 200...299 ~= httpResponse.statusCode else {
-            var error = "Bad Response: \(httpResponse.statusCode)"
-            if let errorResponse = try? jsonDecoder.decode(ErrorRootResponse.self, from: data).error {
-                error.append("\n\(errorResponse.message)")
-            }
-            throw error
-        }
-        
-        do {
-            let completionResponse = try self.jsonDecoder.decode(CompletionResponse.self, from: data)
-            let responseText = completionResponse.choices.first?.message.content ?? ""
-            self.appendToHistoryList(userText: text, responseText: responseText)
-            return responseText
-        } catch {
-            throw error
-        }
-    }
-    #endif
+
+        let response = try await client.createChatCompletion(body: .json(.init(
+            messages: self.generateInternalMessages(from: text, systemText: systemText),
+            model: .init(value1: nil, value2: model))))
     
-    @discardableResult
-    public func sendMessage(text: String,
-                            model: String = ChatGPTAPI.Constants.defaultModel,
-                            systemText: String = ChatGPTAPI.Constants.defaultSystemText,
-                            temperature: Double = ChatGPTAPI.Constants.defaultTemperature,
-                            completion: @escaping (Result<String, Error>) -> Void) -> URLSessionTask {
-        var urlRequest = self.urlRequest
-        do {
-            urlRequest.httpBody = try jsonBody(text: text, model: model, systemText: systemText, temperature: temperature, stream: false)
-        } catch {
-            completion(.failure(error))
+        switch response {
+        case .ok(let body):
+            let json = try body.body.json
+            guard let content = json.choices.first?.message.content else {
+                throw "No Response"
+            }
+            self.appendToHistoryList(userText: text, responseText: content)
+            return content
+        case .undocumented(let statusCode, let payload):
+            throw "OpenAIClientError - statuscode: \(statusCode), \(payload)"
         }
-        
-        let dataTask = urlSession.dataTask(with: urlRequest) { [weak self] data, response, error in
-            guard let self else { return }
-            if let error = error {
-                completion(.failure(error))
-                return
-            }
-            
-            guard let httpResponse = response as? HTTPURLResponse else {
-                completion(.failure("Invalid Response"))
-                return
-            }
-            
-            guard let data = data else {
-                completion(.failure("Invalid Data"))
-                return
-            }
-            
-            guard 200...299 ~= httpResponse.statusCode else {
-                var error = "Bad Response: \(httpResponse.statusCode)"
-                if let errorResponse = try? self.jsonDecoder.decode(ErrorRootResponse.self, from: data).error {
-                    error.append("\n\(errorResponse.message)")
-                }
-                completion(.failure("Invalid Data"))
-                return
-            }
-            
-            do {
-                let completionResponse = try self.jsonDecoder.decode(CompletionResponse.self, from: data)
-                let responseText = completionResponse.choices.first?.message.content ?? ""
-                self.appendToHistoryList(userText: text, responseText: responseText)
-                completion(.success(responseText))
-            } catch {
-                completion(.failure(error))
-            }
-        }
-        dataTask.resume()
-        return dataTask
     }
     
-    @discardableResult
-    public func sendMessageStream(text: String,
-                            model: String = ChatGPTAPI.Constants.defaultModel,
-                            systemText: String = ChatGPTAPI.Constants.defaultSystemText,
-                            temperature: Double = ChatGPTAPI.Constants.defaultTemperature,
-                            callback: @escaping (Result<StreamChunk, Error>) -> Void) -> URLSessionTask {
-        var urlRequest = self.urlRequest
-        do {
-            urlRequest.httpBody = try jsonBody(text: text, model: model, systemText: systemText, temperature: temperature)
-        } catch {
-            callback(.failure(error))
-        }
-        var responseText = ""
-        let sessionDelegate = URLSessionDelegateStreamChunk<StreamCompletionResponse>(jsonDecoder: self.jsonDecoder, callback: { [weak self] result in
-            guard let self else { return }
-            if case .success(let chunk) = result {
-                responseText += chunk.text
-                if chunk.isFinished {
-                    self.appendToHistoryList(userText: text, responseText: responseText)
-                }
-            }
-            callback(result)
-        })
-        
-        let session = URLSession(configuration: .default, delegate: sessionDelegate, delegateQueue: nil)
-        let dataTask = session.dataTask(with: urlRequest)
-        dataTask.resume()
-        return dataTask
-    }
     
     public func deleteHistoryList() {
         self.historyList.removeAll()
@@ -317,9 +132,4 @@ public class ChatGPTAPI: @unchecked Sendable {
         self.historyList = messages
     }
     
-}
-
-public struct StreamChunk {
-    public var text: String
-    public var isFinished: Bool
 }
