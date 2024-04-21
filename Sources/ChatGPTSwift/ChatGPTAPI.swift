@@ -189,7 +189,7 @@ public class ChatGPTAPI: @unchecked Sendable {
     
     #if os(iOS) || os(macOS) || os(watchOS) || os(tvOS) || os(visionOS)
     /// TODO: use swift-openapi-runtime MultipartFormBuilder
-    public func generateAudioTransciptions(audioData: Data, fileName: String = "recording.m4a", model: String = "whisper1") async throws -> String {
+    public func generateAudioTransciptions(audioData: Data, fileName: String = "recording.m4a", model: String = "whisper-1", language: String = "en") async throws -> String {
         var request = URLRequest(url: URL(string: "https://api.openai.com/v1/audio/transcriptions")!)
         let boundary: String = UUID().uuidString
         request.timeoutInterval = 30
@@ -200,6 +200,7 @@ public class ChatGPTAPI: @unchecked Sendable {
         let bodyBuilder = MultipartFormDataBodyBuilder(boundary: boundary, entries: [
             .file(paramName: "file", fileName: fileName, fileData: audioData, contentType: "audio/mpeg"),
             .string(paramName: "model", value: model),
+            .string(paramName: "language", value: language),
             .string(paramName: "response_format", value: "text")
         ])
         request.httpBody = bodyBuilder.build()
