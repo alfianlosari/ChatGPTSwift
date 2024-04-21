@@ -14,6 +14,9 @@ import OpenAPIAsyncHTTPClient
 import OpenAPIURLSession
 #endif
 
+public typealias ChatCompletionTool = Components.Schemas.ChatCompletionTool
+public typealias ChatCompletionResponseMessage = Components.Schemas.ChatCompletionResponseMessage
+
 public class ChatGPTAPI: @unchecked Sendable {
     
     public enum Constants {
@@ -123,6 +126,28 @@ public class ChatGPTAPI: @unchecked Sendable {
         }
     }
     
+    public func callFunction(prompt: String,
+                              tools: [ChatCompletionTool],
+                              model: Components.Schemas.CreateChatCompletionRequest.modelPayload.Value2Payload = .gpt_hyphen_4,
+                              systemText: String = "Don't make assumptions about what values to plug into functions. Ask for clarification if a user request is ambiguous."
+    ) async throws -> ChatCompletionResponseMessage {
+        let response = try await client.createChatCompletion(.init(body: .json(.init(
+            messages: generateInternalMessages(from: prompt, systemText: systemText),
+            model: .init(value1: nil, value2: model),
+            tools: tools,
+            tool_choice: .none))))
+        
+        switch response {
+        case .ok(let body):
+            let json = try body.body.json
+            guard let message = json.choices.first?.message else {
+                throw "No Response"
+            }
+            return message
+        case .undocumented(let statusCode, let payload):
+            throw "OpenAIClientError - statuscode: \(statusCode), \(payload)"
+        }
+    }
     
     public func deleteHistoryList() {
         self.historyList.removeAll()
