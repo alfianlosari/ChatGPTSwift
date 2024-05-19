@@ -2858,6 +2858,12 @@ public enum Components {
                 public var value1: Swift.String?
                 /// - Remark: Generated from `#/components/schemas/CreateChatCompletionRequest/model/value2`.
                 @frozen public enum Value2Payload: String, Codable, Hashable, Sendable {
+                    case gpt_hyphen_4o = "gpt-4o"
+                    case gpt_hyphen_4o_hyphen_2024_hyphen_05_hyphen_13 = "gpt-4o-2024-05-13"
+                    case gpt_hyphen_4_hyphen_turbo = "gpt-4-turbo"
+                    case gpt_hyphen_4_hyphen_turbo_hyphen_2024_hyphen_04_hyphen_09 = "gpt-4-turbo-2024-04-09"
+                    case gpt_hyphen_4_hyphen_0125_hyphen_preview = "gpt-4-0125-preview"
+                    case gpt_hyphen_4_hyphen_turbo_hyphen_preview = "gpt-4-turbo-preview"
                     case gpt_hyphen_4_hyphen_1106_hyphen_preview = "gpt-4-1106-preview"
                     case gpt_hyphen_4_hyphen_vision_hyphen_preview = "gpt-4-vision-preview"
                     case gpt_hyphen_4 = "gpt-4"
@@ -2866,11 +2872,12 @@ public enum Components {
                     case gpt_hyphen_4_hyphen_32k = "gpt-4-32k"
                     case gpt_hyphen_4_hyphen_32k_hyphen_0314 = "gpt-4-32k-0314"
                     case gpt_hyphen_4_hyphen_32k_hyphen_0613 = "gpt-4-32k-0613"
-                    case gpt_hyphen_3_period_5_hyphen_turbo_hyphen_1106 = "gpt-3.5-turbo-1106"
                     case gpt_hyphen_3_period_5_hyphen_turbo = "gpt-3.5-turbo"
                     case gpt_hyphen_3_period_5_hyphen_turbo_hyphen_16k = "gpt-3.5-turbo-16k"
                     case gpt_hyphen_3_period_5_hyphen_turbo_hyphen_0301 = "gpt-3.5-turbo-0301"
                     case gpt_hyphen_3_period_5_hyphen_turbo_hyphen_0613 = "gpt-3.5-turbo-0613"
+                    case gpt_hyphen_3_period_5_hyphen_turbo_hyphen_1106 = "gpt-3.5-turbo-1106"
+                    case gpt_hyphen_3_period_5_hyphen_turbo_hyphen_0125 = "gpt-3.5-turbo-0125"
                     case gpt_hyphen_3_period_5_hyphen_turbo_hyphen_16k_hyphen_0613 = "gpt-3.5-turbo-16k-0613"
                 }
                 /// - Remark: Generated from `#/components/schemas/CreateChatCompletionRequest/model/value2`.

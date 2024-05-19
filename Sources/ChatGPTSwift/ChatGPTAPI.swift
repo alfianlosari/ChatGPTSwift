@@ -83,7 +83,7 @@ public class ChatGPTAPI: @unchecked Sendable {
     }
     
     public func sendMessageStream(text: String,
-                                  model: Components.Schemas.CreateChatCompletionRequest.modelPayload.Value2Payload = .gpt_hyphen_4,
+                                  model: Components.Schemas.CreateChatCompletionRequest.modelPayload.Value2Payload = .gpt_hyphen_4o,
                                   systemText: String = ChatGPTAPI.Constants.defaultSystemText,
                                   temperature: Double = ChatGPTAPI.Constants.defaultTemperature) async throws -> AsyncMapSequence<AsyncThrowingPrefixWhileSequence<AsyncThrowingMapSequence<ServerSentEventsDeserializationSequence<ServerSentEventsLineDeserializationSequence<HTTPBody>>, ServerSentEventWithJSONData<Components.Schemas.CreateChatCompletionStreamResponse>>>, String> {
         let response = try await client.createChatCompletion(.init(headers: .init(accept: [.init(contentType: .text_event_hyphen_stream)]), body: .json(.init(
@@ -106,7 +106,7 @@ public class ChatGPTAPI: @unchecked Sendable {
     }
 
     public func sendMessage(text: String,
-                            model: Components.Schemas.CreateChatCompletionRequest.modelPayload.Value2Payload = .gpt_hyphen_4,
+                            model: Components.Schemas.CreateChatCompletionRequest.modelPayload.Value2Payload = .gpt_hyphen_4o,
                             systemText: String = ChatGPTAPI.Constants.defaultSystemText,
                             temperature: Double = ChatGPTAPI.Constants.defaultTemperature) async throws -> String {
 
