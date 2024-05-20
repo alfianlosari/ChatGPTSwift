@@ -92,18 +92,25 @@ public class ChatGPTAPI: @unchecked Sendable {
             model: .init(value1: nil, value2: model),
             stream: true))))
 
-        let stream = try response.ok.body.text_event_hyphen_stream.asDecodedServerSentEventsWithJSONData(
-            of: Components.Schemas.CreateChatCompletionStreamResponse.self
-        )
-        .prefix { chunk in
-            if let choice = chunk.data?.choices.first {
-                return choice.finish_reason != .stop
-            } else {
-                throw "Invalid data"
+        do {
+            let stream = try response.ok.body.text_event_hyphen_stream.asDecodedServerSentEventsWithJSONData(
+                of: Components.Schemas.CreateChatCompletionStreamResponse.self
+            )
+                .prefix { chunk in
+                    if let choice = chunk.data?.choices.first {
+                        return choice.finish_reason != .stop
+                    } else {
+                        throw "Invalid data"
+                    }
+                }
+                .map{ $0.data?.choices.first?.delta.content ?? "" }
+            return stream
+        } catch {
+            if (error as CustomStringConvertible).description.contains("statusCode: 401") {
+                throw "401 - Check your OpenAI API Key. Make sure you have sufficient quota and are eligible to use \(model.rawValue)"
             }
+            throw error
         }
-        .map{ $0.data?.choices.first?.delta.content ?? "" }
-        return stream
     }
 
     public func sendMessage(text: String,
@@ -124,6 +131,9 @@ public class ChatGPTAPI: @unchecked Sendable {
             self.appendToHistoryList(userText: text, responseText: content)
             return content
         case .undocumented(let statusCode, let payload):
+            if (statusCode == 401) {
+                throw "401 - Check your OpenAI API Key. Make sure you have sufficient quota and are eligible to use \(model.rawValue)"
+            }
             throw "OpenAIClientError - statuscode: \(statusCode), \(payload)"
         }
     }
@@ -147,6 +157,9 @@ public class ChatGPTAPI: @unchecked Sendable {
             }
             return message
         case .undocumented(let statusCode, let payload):
+            if (statusCode == 401) {
+                throw "401 - Check your OpenAI API Key. Make sure you have sufficient quota and are eligible to use \(model.rawValue)"
+            }
             throw "OpenAIClientError - statuscode: \(statusCode), \(payload)"
         }
     }
@@ -176,6 +189,9 @@ public class ChatGPTAPI: @unchecked Sendable {
             }
             
         case .undocumented(let statusCode, let payload):
+            if (statusCode == 401) {
+                throw "401 - Check your OpenAI API Key. Make sure you have sufficient quota and are eligible to use \(model.rawValue)"
+            }
             throw "OpenAIClientError - statuscode: \(statusCode), \(payload)"
         }
     }
