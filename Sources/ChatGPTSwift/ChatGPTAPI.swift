@@ -106,10 +106,18 @@ public class ChatGPTAPI: @unchecked Sendable {
                 .map{ $0.data?.choices.first?.delta.content ?? "" }
             return stream
         } catch {
-            if (error as CustomStringConvertible).description.contains("statusCode: 401") {
-                throw "401 - Check your OpenAI API Key. Make sure you have sufficient quota and are eligible to use \(model.rawValue)"
+            let statusCode: Int
+            let errorDesc = (error as CustomStringConvertible).description
+            if errorDesc.contains("statusCode: 401") {
+                statusCode = 401
+            } else if errorDesc.contains("statusCode: 403") {
+                statusCode = 403
+            } else if errorDesc.contains("statusCode: 429") {
+                statusCode = 429
+            } else {
+                statusCode = 500
             }
-            throw error
+            throw getError(statusCode: statusCode, model: model.rawValue, payload: nil)
         }
     }
 
@@ -131,10 +139,7 @@ public class ChatGPTAPI: @unchecked Sendable {
             self.appendToHistoryList(userText: text, responseText: content)
             return content
         case .undocumented(let statusCode, let payload):
-            if (statusCode == 401) {
-                throw "401 - Check your OpenAI API Key. Make sure you have sufficient quota and are eligible to use \(model.rawValue)"
-            }
-            throw "OpenAIClientError - statuscode: \(statusCode), \(payload)"
+            throw getError(statusCode: statusCode, model: model.rawValue, payload: payload)
         }
     }
     
@@ -157,10 +162,7 @@ public class ChatGPTAPI: @unchecked Sendable {
             }
             return message
         case .undocumented(let statusCode, let payload):
-            if (statusCode == 401) {
-                throw "401 - Check your OpenAI API Key. Make sure you have sufficient quota and are eligible to use \(model.rawValue)"
-            }
-            throw "OpenAIClientError - statuscode: \(statusCode), \(payload)"
+            throw getError(statusCode: statusCode, model: model.rawValue, payload: payload)
         }
     }
     
@@ -189,10 +191,7 @@ public class ChatGPTAPI: @unchecked Sendable {
             }
             
         case .undocumented(let statusCode, let payload):
-            if (statusCode == 401) {
-                throw "401 - Check your OpenAI API Key. Make sure you have sufficient quota and are eligible to use \(model.rawValue)"
-            }
-            throw "OpenAIClientError - statuscode: \(statusCode), \(payload)"
+            throw getError(statusCode: statusCode, model: model.rawValue, payload: payload)
         }
     }
 
@@ -223,7 +222,8 @@ public class ChatGPTAPI: @unchecked Sendable {
         request.httpBody = bodyBuilder.build()
         let (data, resp) = try await URLSession.shared.data(for: request)
         guard let httpResp = resp as? HTTPURLResponse, httpResp.statusCode == 200 else {
-            throw "Invalid Status Code \((resp as? HTTPURLResponse)?.statusCode ?? -1)"
+            let statusCode = (resp as? HTTPURLResponse)?.statusCode ?? 500
+            throw getError(statusCode: statusCode, model: model, payload: nil)
         }
         guard let text = String(data: data, encoding: .utf8) else {
             throw "Invalid format"
@@ -233,4 +233,28 @@ public class ChatGPTAPI: @unchecked Sendable {
     }
     #endif
     
+    func getError(statusCode: Int, model: String?, payload: UndocumentedPayload?) -> Error {
+        var error = "\(statusCode) - "
+        if statusCode == 401 {
+            error += "Invalid Authentication. Check your OpenAI API Key. Make sure it is correct with sufficient quota"
+            if let model {
+                error += " and are eligible to use \(model)."
+            } else {
+                error += "."
+            }
+        } else if statusCode == 403 {
+            error += "Country, region, or territory not supported. Check OpenAI website for supported countries."
+        } else if statusCode == 429 {
+            error += " Rate limit reached for requests - You are sending requests too quickly or you exceeded your current quota, please check your plan and billing details."
+        } else {
+            error = "Status Code: \(statusCode). Check OpenAI Doc for status code error description."
+            if let payload {
+                error += " \(payload)"
+            }
+        }
+          
+        return error
+    }
+    
 }
+
