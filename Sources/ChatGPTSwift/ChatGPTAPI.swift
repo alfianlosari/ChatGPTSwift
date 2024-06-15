@@ -86,9 +86,15 @@ public class ChatGPTAPI: @unchecked Sendable {
     public func sendMessageStream(text: String,
                                   model: ChatGPTModel = .gpt_hyphen_4o,
                                   systemText: String = ChatGPTAPI.Constants.defaultSystemText,
-                                  temperature: Double = ChatGPTAPI.Constants.defaultTemperature) async throws -> AsyncMapSequence<AsyncThrowingPrefixWhileSequence<AsyncThrowingMapSequence<ServerSentEventsDeserializationSequence<ServerSentEventsLineDeserializationSequence<HTTPBody>>, ServerSentEventWithJSONData<Components.Schemas.CreateChatCompletionStreamResponse>>>, String> {
+                                  temperature: Double = ChatGPTAPI.Constants.defaultTemperature,
+                                  imageData: Data? = nil) async throws -> AsyncMapSequence<AsyncThrowingPrefixWhileSequence<AsyncThrowingMapSequence<ServerSentEventsDeserializationSequence<ServerSentEventsLineDeserializationSequence<HTTPBody>>, ServerSentEventWithJSONData<Components.Schemas.CreateChatCompletionStreamResponse>>>, String> {
+        var messages = generateInternalMessages(from: text, systemText: systemText)
+        if let imageData {
+            messages.append(createMessage(imageData: imageData))
+        }
+        
         let response = try await client.createChatCompletion(.init(headers: .init(accept: [.init(contentType: .text_event_hyphen_stream)]), body: .json(.init(
-            messages: self.generateInternalMessages(from: text, systemText: systemText),
+            messages: messages,
             model: .init(value1: nil, value2: model),
             stream: true))))
 
@@ -124,10 +130,15 @@ public class ChatGPTAPI: @unchecked Sendable {
     public func sendMessage(text: String,
                             model: ChatGPTModel = .gpt_hyphen_4o,
                             systemText: String = ChatGPTAPI.Constants.defaultSystemText,
-                            temperature: Double = ChatGPTAPI.Constants.defaultTemperature) async throws -> String {
+                            temperature: Double = ChatGPTAPI.Constants.defaultTemperature,
+                            imageData: Data? = nil) async throws -> String {
+        var messages = generateInternalMessages(from: text, systemText: systemText)
+        if let imageData {
+            messages.append(createMessage(imageData: imageData))
+        }
 
         let response = try await client.createChatCompletion(body: .json(.init(
-            messages: self.generateInternalMessages(from: text, systemText: systemText),
+            messages: messages,
             model: .init(value1: nil, value2: model))))
     
         switch response {
@@ -146,10 +157,16 @@ public class ChatGPTAPI: @unchecked Sendable {
     public func callFunction(prompt: String,
                               tools: [ChatCompletionTool],
                               model: Components.Schemas.CreateChatCompletionRequest.modelPayload.Value2Payload = .gpt_hyphen_4,
-                              systemText: String = "Don't make assumptions about what values to plug into functions. Ask for clarification if a user request is ambiguous."
+                              systemText: String = "Don't make assumptions about what values to plug into functions. Ask for clarification if a user request is ambiguous.",
+                             imageData: Data? = nil
     ) async throws -> ChatCompletionResponseMessage {
+        var messages = generateInternalMessages(from: prompt, systemText: systemText)
+        if let imageData {
+            messages.append(createMessage(imageData: imageData))
+        }
+        
         let response = try await client.createChatCompletion(.init(body: .json(.init(
-            messages: generateInternalMessages(from: prompt, systemText: systemText),
+            messages: messages,
             model: .init(value1: nil, value2: model),
             tools: tools,
             tool_choice: .none))))
@@ -233,6 +250,39 @@ public class ChatGPTAPI: @unchecked Sendable {
     }
     #endif
     
+    public func generateDallE3Image(prompt: String,
+                                    quality: Components.Schemas.CreateImageRequest.qualityPayload = .standard,
+                                    responseFormat: Components.Schemas.CreateImageRequest.response_formatPayload = .url,
+                                    style: Components.Schemas.CreateImageRequest.stylePayload = .vivid
+                                    
+    ) async throws -> Components.Schemas.Image {
+        
+        let response = try await client.createImage(.init(body: .json(
+            .init(
+                prompt: prompt,
+                model: .init(value1: nil, value2: .dall_hyphen_e_hyphen_3),
+                n: 1,
+                quality: quality,
+                response_format: responseFormat,
+                size: ._1024x1024,
+                style: style
+            ))))
+        
+        switch response {
+        case .ok(let response):
+            switch response.body {
+            case .json(let imageResponse) where imageResponse.data.first != nil:
+                return imageResponse.data.first!
+                
+            default:
+                throw "Unknown response"
+            }
+            
+        case .undocumented(let statusCode, let payload):
+            throw getError(statusCode: statusCode, model: Components.Schemas.CreateImageRequest.modelPayload.Value2Payload.dall_hyphen_e_hyphen_3.rawValue, payload: payload)
+        }
+    }
+    
     func getError(statusCode: Int, model: String?, payload: UndocumentedPayload?) -> Error {
         var error = "\(statusCode) - "
         if statusCode == 401 {
@@ -255,6 +305,18 @@ public class ChatGPTAPI: @unchecked Sendable {
           
         return error
     }
+    
+    
+    func createMessage(imageData: Data) -> Components.Schemas.ChatCompletionRequestMessage {
+        .ChatCompletionRequestUserMessage(
+            .init(content: .case2([.ChatCompletionRequestMessageContentPartImage(
+                .init(_type: .image_url,
+                      image_url:
+                        .init(url: "data:image/jpeg;base64,\(imageData.base64EncodedString())",
+                        detail: .auto)))]),
+                  role: .user))
+    }
+    
     
 }
 
