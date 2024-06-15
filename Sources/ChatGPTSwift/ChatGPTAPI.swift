@@ -87,6 +87,9 @@ public class ChatGPTAPI: @unchecked Sendable {
                                   model: ChatGPTModel = .gpt_hyphen_4o,
                                   systemText: String = ChatGPTAPI.Constants.defaultSystemText,
                                   temperature: Double = ChatGPTAPI.Constants.defaultTemperature,
+                                  maxTokens: Int? = nil,
+                                  responseFormat: Components.Schemas.CreateChatCompletionRequest.response_formatPayload? = nil,
+                                  stop: Components.Schemas.CreateChatCompletionRequest.stopPayload? = nil,
                                   imageData: Data? = nil) async throws -> AsyncMapSequence<AsyncThrowingPrefixWhileSequence<AsyncThrowingMapSequence<ServerSentEventsDeserializationSequence<ServerSentEventsLineDeserializationSequence<HTTPBody>>, ServerSentEventWithJSONData<Components.Schemas.CreateChatCompletionStreamResponse>>>, String> {
         var messages = generateInternalMessages(from: text, systemText: systemText)
         if let imageData {
@@ -96,6 +99,9 @@ public class ChatGPTAPI: @unchecked Sendable {
         let response = try await client.createChatCompletion(.init(headers: .init(accept: [.init(contentType: .text_event_hyphen_stream)]), body: .json(.init(
             messages: messages,
             model: .init(value1: nil, value2: model),
+            max_tokens: maxTokens,
+            response_format: responseFormat,
+            stop: stop,
             stream: true))))
 
         do {
@@ -131,15 +137,22 @@ public class ChatGPTAPI: @unchecked Sendable {
                             model: ChatGPTModel = .gpt_hyphen_4o,
                             systemText: String = ChatGPTAPI.Constants.defaultSystemText,
                             temperature: Double = ChatGPTAPI.Constants.defaultTemperature,
+                            maxTokens: Int? = nil,
+                            responseFormat: Components.Schemas.CreateChatCompletionRequest.response_formatPayload? = nil,
+                            stop: Components.Schemas.CreateChatCompletionRequest.stopPayload? = nil,
                             imageData: Data? = nil) async throws -> String {
         var messages = generateInternalMessages(from: text, systemText: systemText)
         if let imageData {
             messages.append(createMessage(imageData: imageData))
         }
-
+        
         let response = try await client.createChatCompletion(body: .json(.init(
             messages: messages,
-            model: .init(value1: nil, value2: model))))
+            model: .init(value1: nil, value2: model),
+            max_tokens: maxTokens,
+            response_format: responseFormat,
+            stop: stop
+        )))
     
         switch response {
         case .ok(let body):
@@ -157,6 +170,9 @@ public class ChatGPTAPI: @unchecked Sendable {
     public func callFunction(prompt: String,
                               tools: [ChatCompletionTool],
                               model: Components.Schemas.CreateChatCompletionRequest.modelPayload.Value2Payload = .gpt_hyphen_4,
+                             maxTokens: Int? = nil,
+                             responseFormat: Components.Schemas.CreateChatCompletionRequest.response_formatPayload? = nil,
+                             stop: Components.Schemas.CreateChatCompletionRequest.stopPayload? = nil,
                               systemText: String = "Don't make assumptions about what values to plug into functions. Ask for clarification if a user request is ambiguous.",
                              imageData: Data? = nil
     ) async throws -> ChatCompletionResponseMessage {
@@ -168,6 +184,9 @@ public class ChatGPTAPI: @unchecked Sendable {
         let response = try await client.createChatCompletion(.init(body: .json(.init(
             messages: messages,
             model: .init(value1: nil, value2: model),
+            max_tokens: maxTokens,
+            response_format: responseFormat,
+            stop: stop,
             tools: tools,
             tool_choice: .none))))
         
