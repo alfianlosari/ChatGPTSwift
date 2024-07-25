@@ -5987,6 +5987,7 @@ components:
             - type: string
               enum:
                 [
+                    "gpt-4o-mini",
                     "gpt-4o",
                     "gpt-4o-2024-05-13",
                     "gpt-4-turbo",

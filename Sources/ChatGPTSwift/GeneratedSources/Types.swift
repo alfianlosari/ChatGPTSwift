@@ -2858,6 +2858,7 @@ public enum Components {
                 public var value1: Swift.String?
                 /// - Remark: Generated from `#/components/schemas/CreateChatCompletionRequest/model/value2`.
                 @frozen public enum Value2Payload: String, Codable, Hashable, Sendable {
+                    case gpt_hyphen_4o_hyphen_mini = "gpt-4o-mini"
                     case gpt_hyphen_4o = "gpt-4o"
                     case gpt_hyphen_4o_hyphen_2024_hyphen_05_hyphen_13 = "gpt-4o-2024-05-13"
                     case gpt_hyphen_4_hyphen_turbo = "gpt-4-turbo"
