@@ -54,6 +54,13 @@ public class ChatGPTAPI: @unchecked Sendable {
             middlewares: [AuthMiddleware(apiKey: apiKey)])
     }
     
+    public init(apiKey: String, clientTransport: ClientTransport) {
+        self.apiKey = apiKey
+        self.client = Client(serverURL: URL(string: self.urlString)!,
+            transport: clientTransport,
+            middlewares: [AuthMiddleware(apiKey: apiKey)])
+    }
+    
     private func generateMessages(from text: String, systemText: String) -> [Message] {
         var messages = [systemMessage(content: systemText)] + historyList + [Message(role: "user", content: text)]
         if gptEncoder.encode(text: messages.content).count > 4096  {
