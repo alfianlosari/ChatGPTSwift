@@ -39,7 +39,7 @@ public class ChatGPTAPI: @unchecked Sendable {
 
     private func systemMessage(content: String) -> Message {
         .init(role: "system", content: content)
-    }
+    } 
     
     public init(apiKey: String) {
         self.apiKey = apiKey
@@ -54,11 +54,18 @@ public class ChatGPTAPI: @unchecked Sendable {
             middlewares: [AuthMiddleware(apiKey: apiKey)])
     }
     
-    private func generateMessages(from text: String, systemText: String) -> [Message] {
+    private func generateMessages(from text: String, systemText: String) throws -> [Message] {
+        // first, we need to check if the provided message, alone, is too long.
+        if gptEncoder.encode(text: text).count > 4096 {
+            // a single message exceeding our maximum token length can never function correctly.
+            // we must inform the user of this issue.
+            throw "Input text is too long. Please try again."
+        }
+        
         var messages = [systemMessage(content: systemText)] + historyList + [Message(role: "user", content: text)]
-        if gptEncoder.encode(text: messages.content).count > 4096  {
+        if gptEncoder.encode(text: messages.content).count > 4096 {
             _ = historyList.removeFirst()
-            messages = generateMessages(from: text, systemText: systemText)
+            messages = try generateMessages(from: text, systemText: systemText)
         }
         return messages
     }
@@ -73,7 +80,7 @@ public class ChatGPTAPI: @unchecked Sendable {
     private func jsonBody(text: String, model: String, systemText: String, temperature: Double, stream: Bool = true) throws -> Data {
         let request = Request(model: model,
                         temperature: temperature,
-                        messages: generateMessages(from: text, systemText: systemText),
+                        messages: try generateMessages(from: text, systemText: systemText),
                         stream: stream)
         return try JSONEncoder().encode(request)
     }
