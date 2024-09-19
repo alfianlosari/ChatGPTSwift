@@ -17,6 +17,16 @@ public struct Message: Codable {
     }
 }
 
+public struct ImageInput {
+    let data: Data
+    let detail: Components.Schemas.ChatCompletionRequestMessageContentPartImage.image_urlPayload.detailPayload
+    
+    public init(data: Data, detail: Components.Schemas.ChatCompletionRequestMessageContentPartImage.image_urlPayload.detailPayload = .auto) {
+        self.data = data
+        self.detail = detail
+    }
+}
+
 extension Array where Element == Message {
     
     var contentCount: Int { map { $0.content }.count }
