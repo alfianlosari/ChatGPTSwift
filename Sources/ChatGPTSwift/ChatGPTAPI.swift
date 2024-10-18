@@ -86,12 +86,41 @@ public class ChatGPTAPI: @unchecked Sendable {
     public func sendMessageStream(text: String,
                                   model: ChatGPTModel = .gpt_hyphen_4o,
                                   systemText: String = ChatGPTAPI.Constants.defaultSystemText,
+                                  withHistory: Bool = false,
                                   temperature: Double = ChatGPTAPI.Constants.defaultTemperature,
                                   maxTokens: Int? = nil,
                                   responseFormat: Components.Schemas.CreateChatCompletionRequest.response_formatPayload? = nil,
                                   stop: Components.Schemas.CreateChatCompletionRequest.stopPayload? = nil,
                                   imageData: Data? = nil) async throws -> AsyncMapSequence<AsyncThrowingPrefixWhileSequence<AsyncThrowingMapSequence<ServerSentEventsDeserializationSequence<ServerSentEventsLineDeserializationSequence<HTTPBody>>, ServerSentEventWithJSONData<Components.Schemas.CreateChatCompletionStreamResponse>>>, String> {
-        var messages = generateInternalMessages(from: text, systemText: systemText)
+        var messages: [Components.Schemas.ChatCompletionRequestMessage] = []
+      
+        if withHistory {
+          messages = historyList.compactMap({ message -> Components.Schemas.ChatCompletionRequestMessage? in
+            switch message.role {
+
+//              /// - Remark: Generated from `#/components/schemas/ChatCompletionRequestMessage/case3`.
+//              case ChatCompletionRequestAssistantMessage(Components.Schemas.ChatCompletionRequestAssistantMessage)
+//              /// - Remark: Generated from `#/components/schemas/ChatCompletionRequestMessage/case4`.
+//              case ChatCompletionRequestToolMessage(Components.Schemas.ChatCompletionRequestToolMessage)
+//              /// - Remark: Generated from `#/components/schemas/ChatCompletionRequestMessage/case5`.
+//              case ChatCompletionRequestFunctionMessage(Components.Schemas.ChatCompletionRequestFunctionMessage)
+              
+              case "system":
+              return .ChatCompletionRequestSystemMessage(.init(content: message.content, role: .system))
+              
+              case "user":
+//              return .ChatCompletionRequestUserMessage(.init(content: message.content, role: .user))
+              return .ChatCompletionRequestUserMessage(.init(content: .case1(<#T##String#>), role: <#T##Components.Schemas.ChatCompletionRequestUserMessage.rolePayload#>))
+              
+              case "assistant":
+              return .ChatCompletionRequestAssistantMessage(.init(content: message.content, role: .assistant))
+              
+              default: return nil
+              
+            }
+          })
+        }
+        messages.append(contentsOf: generateInternalMessages(from: text, systemText: systemText))
         if let imageData {
             messages.append(createMessage(imageData: imageData))
         }
