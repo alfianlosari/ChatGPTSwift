@@ -95,7 +95,7 @@ public class ChatGPTAPI: @unchecked Sendable {
                                   systemText: String = ChatGPTAPI.Constants.defaultSystemText,
                                   temperature: Double = ChatGPTAPI.Constants.defaultTemperature,
                                   maxTokens: Int? = nil,
-                                  responseFormat: Components.Schemas.CreateChatCompletionRequest.response_formatPayload? = nil,
+                                  responseFormat: AnyCodable? = nil,
                                   stop: Components.Schemas.CreateChatCompletionRequest.stopPayload? = nil,
                                   imageInput: ImageInput? = nil) async throws -> AsyncMapSequence<AsyncThrowingPrefixWhileSequence<AsyncThrowingMapSequence<ServerSentEventsDeserializationSequence<ServerSentEventsLineDeserializationSequence<HTTPBody>>, ServerSentEventWithJSONData<Components.Schemas.CreateChatCompletionStreamResponse>>>, String> {
         var messages = generateInternalMessages(from: text, systemText: systemText)
@@ -145,7 +145,7 @@ public class ChatGPTAPI: @unchecked Sendable {
                             systemText: String = ChatGPTAPI.Constants.defaultSystemText,
                             temperature: Double = ChatGPTAPI.Constants.defaultTemperature,
                             maxTokens: Int? = nil,
-                            responseFormat: Components.Schemas.CreateChatCompletionRequest.response_formatPayload? = nil,
+                            responseFormat: AnyCodable? = nil,
                             stop: Components.Schemas.CreateChatCompletionRequest.stopPayload? = nil,
                             imageInput: ImageInput? = nil) async throws -> String {
         var messages = generateInternalMessages(from: text, systemText: systemText)
@@ -178,7 +178,7 @@ public class ChatGPTAPI: @unchecked Sendable {
                               tools: [ChatCompletionTool],
                               model: Components.Schemas.CreateChatCompletionRequest.modelPayload.Value2Payload = .gpt_hyphen_4,
                              maxTokens: Int? = nil,
-                             responseFormat: Components.Schemas.CreateChatCompletionRequest.response_formatPayload? = nil,
+                             responseFormat: AnyCodable? = nil,
                              stop: Components.Schemas.CreateChatCompletionRequest.stopPayload? = nil,
                               systemText: String = "Don't make assumptions about what values to plug into functions. Ask for clarification if a user request is ambiguous.",
                              imageData: Data? = nil
