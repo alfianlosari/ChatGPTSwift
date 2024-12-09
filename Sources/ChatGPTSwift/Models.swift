@@ -78,11 +78,3 @@ struct StreamMessage: Decodable {
     let content: String?
     let role: String?
 }
-
-extension AnyCodable: @retroactive Hashable {
-    public func hash(into hasher: inout Hasher) {
-        if let hashable = value as? AnyHashable {
-            hasher.combine(hashable)
-        }
-    }
-}
