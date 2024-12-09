@@ -54,6 +54,13 @@ public class ChatGPTAPI: @unchecked Sendable {
             middlewares: [AuthMiddleware(apiKey: apiKey)])
     }
     
+    public init(apiKey: String, clientTransport: ClientTransport) {
+        self.apiKey = apiKey
+        self.client = Client(serverURL: URL(string: self.urlString)!,
+            transport: clientTransport,
+            middlewares: [AuthMiddleware(apiKey: apiKey)])
+    }
+    
     private func generateMessages(from text: String, systemText: String) -> [Message] {
         var messages = [systemMessage(content: systemText)] + historyList + [Message(role: "user", content: text)]
         if gptEncoder.encode(text: messages.content).count > 4096  {
@@ -88,12 +95,12 @@ public class ChatGPTAPI: @unchecked Sendable {
                                   systemText: String = ChatGPTAPI.Constants.defaultSystemText,
                                   temperature: Double = ChatGPTAPI.Constants.defaultTemperature,
                                   maxTokens: Int? = nil,
-                                  responseFormat: Components.Schemas.CreateChatCompletionRequest.response_formatPayload? = nil,
+                                  responseFormat: AnyCodable? = nil,
                                   stop: Components.Schemas.CreateChatCompletionRequest.stopPayload? = nil,
-                                  imageData: Data? = nil) async throws -> AsyncMapSequence<AsyncThrowingPrefixWhileSequence<AsyncThrowingMapSequence<ServerSentEventsDeserializationSequence<ServerSentEventsLineDeserializationSequence<HTTPBody>>, ServerSentEventWithJSONData<Components.Schemas.CreateChatCompletionStreamResponse>>>, String> {
+                                  imageInput: ImageInput? = nil) async throws -> AsyncMapSequence<AsyncThrowingPrefixWhileSequence<AsyncThrowingMapSequence<ServerSentEventsDeserializationSequence<ServerSentEventsLineDeserializationSequence<HTTPBody>>, ServerSentEventWithJSONData<Components.Schemas.CreateChatCompletionStreamResponse>>>, String> {
         var messages = generateInternalMessages(from: text, systemText: systemText)
-        if let imageData {
-            messages.append(createMessage(imageData: imageData))
+        if let imageInput {
+            messages.append(createMessage(imageData: imageInput.data, detail: imageInput.detail))
         }
         
         let response = try await client.createChatCompletion(.init(headers: .init(accept: [.init(contentType: .text_event_hyphen_stream)]), body: .json(.init(
@@ -138,12 +145,12 @@ public class ChatGPTAPI: @unchecked Sendable {
                             systemText: String = ChatGPTAPI.Constants.defaultSystemText,
                             temperature: Double = ChatGPTAPI.Constants.defaultTemperature,
                             maxTokens: Int? = nil,
-                            responseFormat: Components.Schemas.CreateChatCompletionRequest.response_formatPayload? = nil,
+                            responseFormat: AnyCodable? = nil,
                             stop: Components.Schemas.CreateChatCompletionRequest.stopPayload? = nil,
-                            imageData: Data? = nil) async throws -> String {
+                            imageInput: ImageInput? = nil) async throws -> String {
         var messages = generateInternalMessages(from: text, systemText: systemText)
-        if let imageData {
-            messages.append(createMessage(imageData: imageData))
+        if let imageInput {
+            messages.append(createMessage(imageData: imageInput.data, detail: imageInput.detail))
         }
         
         let response = try await client.createChatCompletion(body: .json(.init(
@@ -171,14 +178,14 @@ public class ChatGPTAPI: @unchecked Sendable {
                               tools: [ChatCompletionTool],
                               model: Components.Schemas.CreateChatCompletionRequest.modelPayload.Value2Payload = .gpt_hyphen_4,
                              maxTokens: Int? = nil,
-                             responseFormat: Components.Schemas.CreateChatCompletionRequest.response_formatPayload? = nil,
+                             responseFormat: AnyCodable? = nil,
                              stop: Components.Schemas.CreateChatCompletionRequest.stopPayload? = nil,
                               systemText: String = "Don't make assumptions about what values to plug into functions. Ask for clarification if a user request is ambiguous.",
                              imageData: Data? = nil
     ) async throws -> ChatCompletionResponseMessage {
         var messages = generateInternalMessages(from: prompt, systemText: systemText)
         if let imageData {
-            messages.append(createMessage(imageData: imageData))
+            messages.append(createMessage(imageData: imageData, detail: .auto))
         }
         
         let response = try await client.createChatCompletion(.init(body: .json(.init(
@@ -326,13 +333,14 @@ public class ChatGPTAPI: @unchecked Sendable {
     }
     
     
-    func createMessage(imageData: Data) -> Components.Schemas.ChatCompletionRequestMessage {
+    func createMessage(imageData: Data,
+                       detail: Components.Schemas.ChatCompletionRequestMessageContentPartImage.image_urlPayload.detailPayload) -> Components.Schemas.ChatCompletionRequestMessage {
         .ChatCompletionRequestUserMessage(
             .init(content: .case2([.ChatCompletionRequestMessageContentPartImage(
                 .init(_type: .image_url,
                       image_url:
                         .init(url: "data:image/jpeg;base64,\(imageData.base64EncodedString())",
-                        detail: .auto)))]),
+                        detail: detail)))]),
                   role: .user))
     }
     

@@ -3023,7 +3023,7 @@ public enum Components {
             ///
             ///
             /// - Remark: Generated from `#/components/schemas/CreateChatCompletionRequest/response_format`.
-            public var response_format: Components.Schemas.CreateChatCompletionRequest.response_formatPayload?
+            public var response_format: AnyCodable?
             /// This feature is in Beta.
             /// If specified, our system will make a best effort to sample deterministically, such that repeated requests with the same `seed` and parameters should return the same result.
             /// Determinism is not guaranteed, and you should refer to the `system_fingerprint` response parameter to monitor changes in the backend.
@@ -3211,7 +3211,7 @@ public enum Components {
                 max_tokens: Swift.Int? = nil,
                 n: Swift.Int? = nil,
                 presence_penalty: Swift.Double? = nil,
-                response_format: Components.Schemas.CreateChatCompletionRequest.response_formatPayload? = nil,
+                response_format: AnyCodable? = nil,
                 seed: Swift.Int? = nil,
                 stop: Components.Schemas.CreateChatCompletionRequest.stopPayload? = nil,
                 stream: Swift.Bool? = nil,
