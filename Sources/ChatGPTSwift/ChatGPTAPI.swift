@@ -27,11 +27,11 @@ public class ChatGPTAPI: @unchecked Sendable {
         public static let defaultTemperature = 0.5
     }
 
-    public let client: Client
+    public private(set) var client: Client
     private let urlString = "https://api.openai.com/v1"
     private let gptEncoder = GPTEncoder()
     public private(set) var historyList = [Message]()
-    public var apiKey: String
+    private var apiKey: String
 
     let dateFormatter: DateFormatter = {
         let df = DateFormatter()
@@ -44,6 +44,20 @@ public class ChatGPTAPI: @unchecked Sendable {
     }
 
     public init(apiKey: String) {
+        self.apiKey = apiKey
+        let clientTransport: ClientTransport
+        #if os(Linux)
+            clientTransport = AsyncHTTPClientTransport()
+        #else
+            clientTransport = URLSessionTransport()
+        #endif
+        self.client = Client(
+            serverURL: URL(string: self.urlString)!,
+            transport: clientTransport,
+            middlewares: [AuthMiddleware(apiKey: apiKey)])
+    }
+
+    public func updateAPIKey(_ apikey: String) {
         self.apiKey = apiKey
         let clientTransport: ClientTransport
         #if os(Linux)
