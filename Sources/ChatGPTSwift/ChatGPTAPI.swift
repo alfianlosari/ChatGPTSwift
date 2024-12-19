@@ -57,7 +57,7 @@ public class ChatGPTAPI: @unchecked Sendable {
             middlewares: [AuthMiddleware(apiKey: apiKey)])
     }
 
-    public func updateAPIKey(_ apikey: String) {
+    public func updateAPIKey(_ apiKey: String) {
         self.apiKey = apiKey
         let clientTransport: ClientTransport
         #if os(Linux)
