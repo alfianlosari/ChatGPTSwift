@@ -30,5 +30,3 @@ extension ChatGPTModel: Identifiable, CustomStringConvertible {
     public var description: String { id }
 
 }
-
-extension ChatGPTModel: CaseIterable {}
