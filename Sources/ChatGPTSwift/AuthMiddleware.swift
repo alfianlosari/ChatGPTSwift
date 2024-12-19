@@ -23,3 +23,12 @@ struct AuthMiddleware: ClientMiddleware {
         return try await next(request, body, baseURL)
     }
 }
+
+extension ChatGPTModel: Identifiable, CustomStringConvertible {
+
+    public var id: String { self.rawValue }
+    public var description: String { id }
+
+}
+
+extension ChatGPTModel: CaseIterable {}
