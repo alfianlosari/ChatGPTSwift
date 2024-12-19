@@ -8,18 +8,20 @@
 import Foundation
 import GPTEncoder
 import OpenAPIRuntime
+
 #if os(Linux)
-import OpenAPIAsyncHTTPClient
+    import OpenAPIAsyncHTTPClient
 #else
-import OpenAPIURLSession
+    import OpenAPIURLSession
 #endif
 
 public typealias ChatCompletionTool = Components.Schemas.ChatCompletionTool
 public typealias ChatCompletionResponseMessage = Components.Schemas.ChatCompletionResponseMessage
-public typealias ChatGPTModel =  Components.Schemas.CreateChatCompletionRequest.modelPayload.Value2Payload
+public typealias ChatGPTModel = Components.Schemas.CreateChatCompletionRequest.modelPayload
+    .Value2Payload
 
 public class ChatGPTAPI: @unchecked Sendable {
-    
+
     public enum Constants {
         public static let defaultSystemText = "You're a helpful assistant"
         public static let defaultTemperature = 0.5
@@ -29,7 +31,7 @@ public class ChatGPTAPI: @unchecked Sendable {
     private let urlString = "https://api.openai.com/v1"
     private let gptEncoder = GPTEncoder()
     public private(set) var historyList = [Message]()
-    private let apiKey: String
+    public var apiKey: String
 
     let dateFormatter: DateFormatter = {
         let df = DateFormatter()
@@ -40,74 +42,102 @@ public class ChatGPTAPI: @unchecked Sendable {
     private func systemMessage(content: String) -> Message {
         .init(role: "system", content: content)
     }
-    
+
     public init(apiKey: String) {
         self.apiKey = apiKey
         let clientTransport: ClientTransport
         #if os(Linux)
-        clientTransport = AsyncHTTPClientTransport()
+            clientTransport = AsyncHTTPClientTransport()
         #else
-        clientTransport = URLSessionTransport()
+            clientTransport = URLSessionTransport()
         #endif
-        self.client = Client(serverURL: URL(string: self.urlString)!,
+        self.client = Client(
+            serverURL: URL(string: self.urlString)!,
             transport: clientTransport,
             middlewares: [AuthMiddleware(apiKey: apiKey)])
     }
-    
+
     private func generateMessages(from text: String, systemText: String) -> [Message] {
-        var messages = [systemMessage(content: systemText)] + historyList + [Message(role: "user", content: text)]
-        if gptEncoder.encode(text: messages.content).count > 4096  {
+        var messages =
+            [systemMessage(content: systemText)] + historyList + [
+                Message(role: "user", content: text)
+            ]
+        if gptEncoder.encode(text: messages.content).count > 4096 {
             _ = historyList.removeFirst()
             messages = generateMessages(from: text, systemText: systemText)
         }
         return messages
     }
 
-    private func generateInternalMessages(from text: String, systemText: String) -> [Components.Schemas.ChatCompletionRequestMessage] {
+    private func generateInternalMessages(from text: String, systemText: String) -> [Components
+        .Schemas.ChatCompletionRequestMessage]
+    {
         let messages = self.generateMessages(from: text, systemText: systemText)
         return messages.map {
-            $0.role == "user" ? .ChatCompletionRequestUserMessage(.init(content: .case1($0.content), role: .user)) : .ChatCompletionRequestSystemMessage(.init(content: $0.content, role: .system))
+            $0.role == "user"
+                ? .ChatCompletionRequestUserMessage(.init(content: .case1($0.content), role: .user))
+                : .ChatCompletionRequestSystemMessage(.init(content: $0.content, role: .system))
         }
     }
 
-    private func jsonBody(text: String, model: String, systemText: String, temperature: Double, stream: Bool = true) throws -> Data {
-        let request = Request(model: model,
-                        temperature: temperature,
-                        messages: generateMessages(from: text, systemText: systemText),
-                        stream: stream)
+    private func jsonBody(
+        text: String, model: String, systemText: String, temperature: Double, stream: Bool = true
+    ) throws -> Data {
+        let request = Request(
+            model: model,
+            temperature: temperature,
+            messages: generateMessages(from: text, systemText: systemText),
+            stream: stream)
         return try JSONEncoder().encode(request)
     }
-    
+
     public func appendToHistoryList(userText: String, responseText: String) {
         self.historyList.append(Message(role: "user", content: userText))
         self.historyList.append(Message(role: "assistant", content: responseText))
     }
-    
-    public func sendMessageStream(text: String,
-                                  model: ChatGPTModel = .gpt_hyphen_4o,
-                                  systemText: String = ChatGPTAPI.Constants.defaultSystemText,
-                                  temperature: Double = ChatGPTAPI.Constants.defaultTemperature,
-                                  maxTokens: Int? = nil,
-                                  responseFormat: Components.Schemas.CreateChatCompletionRequest.response_formatPayload? = nil,
-                                  stop: Components.Schemas.CreateChatCompletionRequest.stopPayload? = nil,
-                                  imageData: Data? = nil) async throws -> AsyncMapSequence<AsyncThrowingPrefixWhileSequence<AsyncThrowingMapSequence<ServerSentEventsDeserializationSequence<ServerSentEventsLineDeserializationSequence<HTTPBody>>, ServerSentEventWithJSONData<Components.Schemas.CreateChatCompletionStreamResponse>>>, String> {
+
+    public func sendMessageStream(
+        text: String,
+        model: ChatGPTModel = .gpt_hyphen_4o,
+        systemText: String = ChatGPTAPI.Constants.defaultSystemText,
+        temperature: Double = ChatGPTAPI.Constants.defaultTemperature,
+        maxTokens: Int? = nil,
+        responseFormat: Components.Schemas.CreateChatCompletionRequest.response_formatPayload? =
+            nil,
+        stop: Components.Schemas.CreateChatCompletionRequest.stopPayload? = nil,
+        imageData: Data? = nil
+    ) async throws -> AsyncMapSequence<
+        AsyncThrowingPrefixWhileSequence<
+            AsyncThrowingMapSequence<
+                ServerSentEventsDeserializationSequence<
+                    ServerSentEventsLineDeserializationSequence<HTTPBody>
+                >,
+                ServerSentEventWithJSONData<Components.Schemas.CreateChatCompletionStreamResponse>
+            >
+        >, String
+    > {
         var messages = generateInternalMessages(from: text, systemText: systemText)
         if let imageData {
             messages.append(createMessage(imageData: imageData))
         }
-        
-        let response = try await client.createChatCompletion(.init(headers: .init(accept: [.init(contentType: .text_event_hyphen_stream)]), body: .json(.init(
-            messages: messages,
-            model: .init(value1: nil, value2: model),
-            max_tokens: maxTokens,
-            response_format: responseFormat,
-            stop: stop,
-            stream: true))))
+
+        let response = try await client.createChatCompletion(
+            .init(
+                headers: .init(accept: [.init(contentType: .text_event_hyphen_stream)]),
+                body: .json(
+                    .init(
+                        messages: messages,
+                        model: .init(value1: nil, value2: model),
+                        max_tokens: maxTokens,
+                        response_format: responseFormat,
+                        stop: stop,
+                        stream: true))))
 
         do {
-            let stream = try response.ok.body.text_event_hyphen_stream.asDecodedServerSentEventsWithJSONData(
-                of: Components.Schemas.CreateChatCompletionStreamResponse.self
-            )
+            let stream = try response.ok.body.text_event_hyphen_stream
+                .asDecodedServerSentEventsWithJSONData(
+                    of: Components.Schemas.CreateChatCompletionStreamResponse.self
+                )
                 .prefix { chunk in
                     if let choice = chunk.data?.choices.first {
                         return choice.finish_reason != .stop
@@ -115,7 +145,7 @@ public class ChatGPTAPI: @unchecked Sendable {
                         throw "Invalid data"
                     }
                 }
-                .map{ $0.data?.choices.first?.delta.content ?? "" }
+                .map { $0.data?.choices.first?.delta.content ?? "" }
             return stream
         } catch {
             let statusCode: Int
@@ -133,27 +163,32 @@ public class ChatGPTAPI: @unchecked Sendable {
         }
     }
 
-    public func sendMessage(text: String,
-                            model: ChatGPTModel = .gpt_hyphen_4o,
-                            systemText: String = ChatGPTAPI.Constants.defaultSystemText,
-                            temperature: Double = ChatGPTAPI.Constants.defaultTemperature,
-                            maxTokens: Int? = nil,
-                            responseFormat: Components.Schemas.CreateChatCompletionRequest.response_formatPayload? = nil,
-                            stop: Components.Schemas.CreateChatCompletionRequest.stopPayload? = nil,
-                            imageData: Data? = nil) async throws -> String {
+    public func sendMessage(
+        text: String,
+        model: ChatGPTModel = .gpt_hyphen_4o,
+        systemText: String = ChatGPTAPI.Constants.defaultSystemText,
+        temperature: Double = ChatGPTAPI.Constants.defaultTemperature,
+        maxTokens: Int? = nil,
+        responseFormat: Components.Schemas.CreateChatCompletionRequest.response_formatPayload? =
+            nil,
+        stop: Components.Schemas.CreateChatCompletionRequest.stopPayload? = nil,
+        imageData: Data? = nil
+    ) async throws -> String {
         var messages = generateInternalMessages(from: text, systemText: systemText)
         if let imageData {
             messages.append(createMessage(imageData: imageData))
         }
-        
-        let response = try await client.createChatCompletion(body: .json(.init(
-            messages: messages,
-            model: .init(value1: nil, value2: model),
-            max_tokens: maxTokens,
-            response_format: responseFormat,
-            stop: stop
-        )))
-    
+
+        let response = try await client.createChatCompletion(
+            body: .json(
+                .init(
+                    messages: messages,
+                    model: .init(value1: nil, value2: model),
+                    max_tokens: maxTokens,
+                    response_format: responseFormat,
+                    stop: stop
+                )))
+
         switch response {
         case .ok(let body):
             let json = try body.body.json
@@ -166,30 +201,37 @@ public class ChatGPTAPI: @unchecked Sendable {
             throw getError(statusCode: statusCode, model: model.rawValue, payload: payload)
         }
     }
-    
-    public func callFunction(prompt: String,
-                              tools: [ChatCompletionTool],
-                              model: Components.Schemas.CreateChatCompletionRequest.modelPayload.Value2Payload = .gpt_hyphen_4,
-                             maxTokens: Int? = nil,
-                             responseFormat: Components.Schemas.CreateChatCompletionRequest.response_formatPayload? = nil,
-                             stop: Components.Schemas.CreateChatCompletionRequest.stopPayload? = nil,
-                              systemText: String = "Don't make assumptions about what values to plug into functions. Ask for clarification if a user request is ambiguous.",
-                             imageData: Data? = nil
+
+    public func callFunction(
+        prompt: String,
+        tools: [ChatCompletionTool],
+        model: Components.Schemas.CreateChatCompletionRequest.modelPayload.Value2Payload =
+            .gpt_hyphen_4,
+        maxTokens: Int? = nil,
+        responseFormat: Components.Schemas.CreateChatCompletionRequest.response_formatPayload? =
+            nil,
+        stop: Components.Schemas.CreateChatCompletionRequest.stopPayload? = nil,
+        systemText: String =
+            "Don't make assumptions about what values to plug into functions. Ask for clarification if a user request is ambiguous.",
+        imageData: Data? = nil
     ) async throws -> ChatCompletionResponseMessage {
         var messages = generateInternalMessages(from: prompt, systemText: systemText)
         if let imageData {
             messages.append(createMessage(imageData: imageData))
         }
-        
-        let response = try await client.createChatCompletion(.init(body: .json(.init(
-            messages: messages,
-            model: .init(value1: nil, value2: model),
-            max_tokens: maxTokens,
-            response_format: responseFormat,
-            stop: stop,
-            tools: tools,
-            tool_choice: .none))))
-        
+
+        let response = try await client.createChatCompletion(
+            .init(
+                body: .json(
+                    .init(
+                        messages: messages,
+                        model: .init(value1: nil, value2: model),
+                        max_tokens: maxTokens,
+                        response_format: responseFormat,
+                        stop: stop,
+                        tools: tools,
+                        tool_choice: .none))))
+
         switch response {
         case .ok(let body):
             let json = try body.body.json
@@ -201,20 +243,22 @@ public class ChatGPTAPI: @unchecked Sendable {
             throw getError(statusCode: statusCode, model: model.rawValue, payload: payload)
         }
     }
-    
-    public func generateSpeechFrom(input: String,
-                                   model: Components.Schemas.CreateSpeechRequest.modelPayload.Value2Payload = .tts_hyphen_1,
-                                   voice: Components.Schemas.CreateSpeechRequest.voicePayload = .alloy,
-                                   format: Components.Schemas.CreateSpeechRequest.response_formatPayload = .aac
+
+    public func generateSpeechFrom(
+        input: String,
+        model: Components.Schemas.CreateSpeechRequest.modelPayload.Value2Payload = .tts_hyphen_1,
+        voice: Components.Schemas.CreateSpeechRequest.voicePayload = .alloy,
+        format: Components.Schemas.CreateSpeechRequest.response_formatPayload = .aac
     ) async throws -> Data {
-        let response = try await client.createSpeech(body: .json(
-            .init(
-                model: .init(value1: nil, value2: model),
-                input: input,
-                voice: voice,
-                response_format: format
-            )))
-        
+        let response = try await client.createSpeech(
+            body: .json(
+                .init(
+                    model: .init(value1: nil, value2: model),
+                    input: input,
+                    voice: voice,
+                    response_format: format
+                )))
+
         switch response {
         case .ok(let response):
             switch response.body {
@@ -225,7 +269,7 @@ public class ChatGPTAPI: @unchecked Sendable {
                 }
                 return data
             }
-            
+
         case .undocumented(let statusCode, let payload):
             throw getError(statusCode: statusCode, model: model.rawValue, payload: payload)
         }
@@ -234,108 +278,130 @@ public class ChatGPTAPI: @unchecked Sendable {
     public func deleteHistoryList() {
         self.historyList.removeAll()
     }
-    
+
     public func replaceHistoryList(with messages: [Message]) {
         self.historyList = messages
     }
-    
+
     #if os(iOS) || os(macOS) || os(watchOS) || os(tvOS) || os(visionOS)
-    /// TODO: use swift-openapi-runtime MultipartFormBuilder
-    public func generateAudioTransciptions(audioData: Data, fileName: String = "recording.m4a", model: String = "whisper-1", language: String = "en") async throws -> String {
-        var request = URLRequest(url: URL(string: "https://api.openai.com/v1/audio/transcriptions")!)
-        let boundary: String = UUID().uuidString
-        request.timeoutInterval = 30
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-        
-        let bodyBuilder = MultipartFormDataBodyBuilder(boundary: boundary, entries: [
-            .file(paramName: "file", fileName: fileName, fileData: audioData, contentType: "audio/mpeg"),
-            .string(paramName: "model", value: model),
-            .string(paramName: "language", value: language),
-            .string(paramName: "response_format", value: "text")
-        ])
-        request.httpBody = bodyBuilder.build()
-        let (data, resp) = try await URLSession.shared.data(for: request)
-        guard let httpResp = resp as? HTTPURLResponse, httpResp.statusCode == 200 else {
-            let statusCode = (resp as? HTTPURLResponse)?.statusCode ?? 500
-            throw getError(statusCode: statusCode, model: model, payload: nil)
+        /// TODO: use swift-openapi-runtime MultipartFormBuilder
+        public func generateAudioTransciptions(
+            audioData: Data, fileName: String = "recording.m4a", model: String = "whisper-1",
+            language: String = "en"
+        ) async throws -> String {
+            var request = URLRequest(
+                url: URL(string: "https://api.openai.com/v1/audio/transcriptions")!)
+            let boundary: String = UUID().uuidString
+            request.timeoutInterval = 30
+            request.httpMethod = "POST"
+            request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+            request.setValue(
+                "multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+
+            let bodyBuilder = MultipartFormDataBodyBuilder(
+                boundary: boundary,
+                entries: [
+                    .file(
+                        paramName: "file", fileName: fileName, fileData: audioData,
+                        contentType: "audio/mpeg"),
+                    .string(paramName: "model", value: model),
+                    .string(paramName: "language", value: language),
+                    .string(paramName: "response_format", value: "text"),
+                ])
+            request.httpBody = bodyBuilder.build()
+            let (data, resp) = try await URLSession.shared.data(for: request)
+            guard let httpResp = resp as? HTTPURLResponse, httpResp.statusCode == 200 else {
+                let statusCode = (resp as? HTTPURLResponse)?.statusCode ?? 500
+                throw getError(statusCode: statusCode, model: model, payload: nil)
+            }
+            guard let text = String(data: data, encoding: .utf8) else {
+                throw "Invalid format"
+            }
+
+            return text
         }
-        guard let text = String(data: data, encoding: .utf8) else {
-            throw "Invalid format"
-        }
-        
-        return text
-    }
     #endif
-    
-    public func generateDallE3Image(prompt: String,
-                                    quality: Components.Schemas.CreateImageRequest.qualityPayload = .standard,
-                                    responseFormat: Components.Schemas.CreateImageRequest.response_formatPayload = .url,
-                                    style: Components.Schemas.CreateImageRequest.stylePayload = .vivid
-                                    
+
+    public func generateDallE3Image(
+        prompt: String,
+        quality: Components.Schemas.CreateImageRequest.qualityPayload = .standard,
+        responseFormat: Components.Schemas.CreateImageRequest.response_formatPayload = .url,
+        style: Components.Schemas.CreateImageRequest.stylePayload = .vivid
+
     ) async throws -> Components.Schemas.Image {
-        
-        let response = try await client.createImage(.init(body: .json(
+
+        let response = try await client.createImage(
             .init(
-                prompt: prompt,
-                model: .init(value1: nil, value2: .dall_hyphen_e_hyphen_3),
-                n: 1,
-                quality: quality,
-                response_format: responseFormat,
-                size: ._1024x1024,
-                style: style
-            ))))
-        
+                body: .json(
+                    .init(
+                        prompt: prompt,
+                        model: .init(value1: nil, value2: .dall_hyphen_e_hyphen_3),
+                        n: 1,
+                        quality: quality,
+                        response_format: responseFormat,
+                        size: ._1024x1024,
+                        style: style
+                    ))))
+
         switch response {
         case .ok(let response):
             switch response.body {
             case .json(let imageResponse) where imageResponse.data.first != nil:
                 return imageResponse.data.first!
-                
+
             default:
                 throw "Unknown response"
             }
-            
+
         case .undocumented(let statusCode, let payload):
-            throw getError(statusCode: statusCode, model: Components.Schemas.CreateImageRequest.modelPayload.Value2Payload.dall_hyphen_e_hyphen_3.rawValue, payload: payload)
+            throw getError(
+                statusCode: statusCode,
+                model: Components.Schemas.CreateImageRequest.modelPayload.Value2Payload
+                    .dall_hyphen_e_hyphen_3.rawValue, payload: payload)
         }
     }
-    
+
     func getError(statusCode: Int, model: String?, payload: UndocumentedPayload?) -> Error {
         var error = "\(statusCode) - "
         if statusCode == 401 {
-            error += "Invalid Authentication. Check your OpenAI API Key. Make sure it is correct with sufficient quota"
+            error +=
+                "Invalid Authentication. Check your OpenAI API Key. Make sure it is correct with sufficient quota"
             if let model {
                 error += " and are eligible to use \(model)."
             } else {
                 error += "."
             }
         } else if statusCode == 403 {
-            error += "Country, region, or territory not supported. Check OpenAI website for supported countries."
+            error +=
+                "Country, region, or territory not supported. Check OpenAI website for supported countries."
         } else if statusCode == 429 {
-            error += " Rate limit reached for requests - You are sending requests too quickly or you exceeded your current quota, please check your plan and billing details."
+            error +=
+                " Rate limit reached for requests - You are sending requests too quickly or you exceeded your current quota, please check your plan and billing details."
         } else {
-            error = "Status Code: \(statusCode). Check OpenAI Doc for status code error description."
+            error =
+                "Status Code: \(statusCode). Check OpenAI Doc for status code error description."
             if let payload {
                 error += " \(payload)"
             }
         }
-          
+
         return error
     }
-    
-    
+
     func createMessage(imageData: Data) -> Components.Schemas.ChatCompletionRequestMessage {
         .ChatCompletionRequestUserMessage(
-            .init(content: .case2([.ChatCompletionRequestMessageContentPartImage(
-                .init(_type: .image_url,
-                      image_url:
-                        .init(url: "data:image/jpeg;base64,\(imageData.base64EncodedString())",
-                        detail: .auto)))]),
-                  role: .user))
+            .init(
+                content: .case2([
+                    .ChatCompletionRequestMessageContentPartImage(
+                        .init(
+                            _type: .image_url,
+                            image_url:
+                                .init(
+                                    url:
+                                        "data:image/jpeg;base64,\(imageData.base64EncodedString())",
+                                    detail: .auto)))
+                ]),
+                role: .user))
     }
-    
-    
-}
 
+}
