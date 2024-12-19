@@ -29,4 +29,8 @@ extension ChatGPTModel: Identifiable, CustomStringConvertible {
     public var id: String { self.rawValue }
     public var description: String { id }
 
+    static var all: [ChatGPTModel] {
+        Self.allCases
+    }
+
 }
