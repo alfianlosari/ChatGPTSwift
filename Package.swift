@@ -16,11 +16,11 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/alfianlosari/GPTEncoder.git", exact: "1.0.4"),
-        .package(url: "https://github.com/apple/swift-openapi-generator", from: "1.2.0"),
-        .package(url: "https://github.com/apple/swift-openapi-runtime", from: "1.4.0"),
-        .package(url: "https://github.com/apple/swift-openapi-urlsession", from: "1.0.0"),
-        .package(url: "https://github.com/swift-server/swift-openapi-async-http-client", from: "1.0.0"),
-        .package(url: "https://github.com/apple/swift-http-types", from: "1.2.0"),
+        .package(url: "https://github.com/apple/swift-openapi-generator", from: "1.10.2"),
+        .package(url: "https://github.com/apple/swift-openapi-runtime", from: "1.8.2"),
+        .package(url: "https://github.com/apple/swift-openapi-urlsession", from: "1.1.0"),
+        .package(url: "https://github.com/swift-server/swift-openapi-async-http-client", from: "1.1.0"),
+        .package(url: "https://github.com/apple/swift-http-types", from: "1.4.0"),
     ],
     targets: [
         .target(

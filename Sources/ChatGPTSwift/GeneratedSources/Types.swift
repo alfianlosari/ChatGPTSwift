@@ -3008,33 +3008,28 @@ public enum Components {
                 /// - Remark: Generated from `#/components/schemas/CreateChatCompletionRequest/model/value2`.
                 @frozen public enum Value2Payload: String, Codable, Hashable, Sendable, CaseIterable
                 {
-                    case o1 = "o1"
-                    case o1_hyphen_2024_hyphen_12_hyphen_17 = "o1-2024-12-17"
-                    case o1_hyphen_preview = "o1-preview"
-                    case o1_hyphen_preview_hyphen_2024_hyphen_09_hyphen_12 = "o1-preview-2024-09-12"
-                    case o1_hyphen_mini = "o1-mini"
-                    case o1_hyphen_mini_hyphen_2024_hyphen_09_hyphen_12 = "o1-mini-2024-09-12"
+                    case gpt_hyphen_5 = "gpt-5"
+                    case gpt_hyphen_5_hyphen_mini = "gpt-5-mini"
+                    case gpt_hyphen_5_hyphen_nano = "gpt-5-nano"
+                    case gpt_hyphen_5_hyphen_2025_hyphen_08_hyphen_07 = "gpt-5-2025-08-07"
+                    case gpt_hyphen_5_hyphen_mini_hyphen_2025_hyphen_08_hyphen_07 = "gpt-5-mini-2025-08-07"
+                    case gpt_hyphen_5_hyphen_nano_hyphen_2025_hyphen_08_hyphen_07 = "gpt-5-nano-2025-08-07"
+                    case gpt_hyphen_4_period_1 = "gpt-4.1"
+                    case gpt_hyphen_4_period_1_hyphen_mini = "gpt-4.1-mini"
+                    case gpt_hyphen_4_period_1_hyphen_nano = "gpt-4.1-nano"
+                    case gpt_hyphen_4_period_1_hyphen_2025_hyphen_04_hyphen_14 = "gpt-4.1-2025-04-14"
+                    case gpt_hyphen_4_period_1_hyphen_mini_hyphen_2025_hyphen_04_hyphen_14 = "gpt-4.1-mini-2025-04-14"
+                    case gpt_hyphen_4_period_1_hyphen_nano_hyphen_2025_hyphen_04_hyphen_14 = "gpt-4.1-nano-2025-04-14"
                     case gpt_hyphen_4o = "gpt-4o"
                     case gpt_hyphen_4o_hyphen_2024_hyphen_11_hyphen_20 = "gpt-4o-2024-11-20"
                     case gpt_hyphen_4o_hyphen_2024_hyphen_08_hyphen_06 = "gpt-4o-2024-08-06"
                     case gpt_hyphen_4o_hyphen_2024_hyphen_05_hyphen_13 = "gpt-4o-2024-05-13"
-                    case gpt_hyphen_4o_hyphen_audio_hyphen_preview = "gpt-4o-audio-preview"
-                    case gpt_hyphen_4o_hyphen_audio_hyphen_preview_hyphen_2024_hyphen_10_hyphen_01 =
-                        "gpt-4o-audio-preview-2024-10-01"
-                    case gpt_hyphen_4o_hyphen_audio_hyphen_preview_hyphen_2024_hyphen_12_hyphen_17 =
-                        "gpt-4o-audio-preview-2024-12-17"
-                    case gpt_hyphen_4o_hyphen_mini_hyphen_audio_hyphen_preview =
-                        "gpt-4o-mini-audio-preview"
-                    case
-                        gpt_hyphen_4o_hyphen_mini_hyphen_audio_hyphen_preview_hyphen_2024_hyphen_12_hyphen_17 =
-                        "gpt-4o-mini-audio-preview-2024-12-17"
-                    case chatgpt_hyphen_4o_hyphen_latest = "chatgpt-4o-latest"
                     case gpt_hyphen_4o_hyphen_mini = "gpt-4o-mini"
-                    case gpt_hyphen_4o_hyphen_mini_hyphen_2024_hyphen_07_hyphen_18 =
-                        "gpt-4o-mini-2024-07-18"
+                    case gpt_hyphen_4o_hyphen_mini_hyphen_2024_hyphen_07_hyphen_18 = "gpt-4o-mini-2024-07-18"
+                    case gpt_hyphen_4_period_5_hyphen_preview = "gpt-4.5-preview"
+                    case gpt_hyphen_4_period_5_hyphen_preview_hyphen_2025_hyphen_02_hyphen_27 = "gpt-4.5-preview-2025-02-27"
                     case gpt_hyphen_4_hyphen_turbo = "gpt-4-turbo"
-                    case gpt_hyphen_4_hyphen_turbo_hyphen_2024_hyphen_04_hyphen_09 =
-                        "gpt-4-turbo-2024-04-09"
+                    case gpt_hyphen_4_hyphen_turbo_hyphen_2024_hyphen_04_hyphen_09 = "gpt-4-turbo-2024-04-09"
                     case gpt_hyphen_4_hyphen_0125_hyphen_preview = "gpt-4-0125-preview"
                     case gpt_hyphen_4_hyphen_turbo_hyphen_preview = "gpt-4-turbo-preview"
                     case gpt_hyphen_4_hyphen_1106_hyphen_preview = "gpt-4-1106-preview"
@@ -3047,12 +3042,10 @@ public enum Components {
                     case gpt_hyphen_4_hyphen_32k_hyphen_0613 = "gpt-4-32k-0613"
                     case gpt_hyphen_3_period_5_hyphen_turbo = "gpt-3.5-turbo"
                     case gpt_hyphen_3_period_5_hyphen_turbo_hyphen_16k = "gpt-3.5-turbo-16k"
-                    case gpt_hyphen_3_period_5_hyphen_turbo_hyphen_0301 = "gpt-3.5-turbo-0301"
                     case gpt_hyphen_3_period_5_hyphen_turbo_hyphen_0613 = "gpt-3.5-turbo-0613"
                     case gpt_hyphen_3_period_5_hyphen_turbo_hyphen_1106 = "gpt-3.5-turbo-1106"
                     case gpt_hyphen_3_period_5_hyphen_turbo_hyphen_0125 = "gpt-3.5-turbo-0125"
-                    case gpt_hyphen_3_period_5_hyphen_turbo_hyphen_16k_hyphen_0613 =
-                        "gpt-3.5-turbo-16k-0613"
+                    case gpt_hyphen_3_period_5_hyphen_turbo_hyphen_16k_hyphen_0613 = "gpt-3.5-turbo-16k-0613"
                 }
                 /// - Remark: Generated from `#/components/schemas/CreateChatCompletionRequest/model/value2`.
                 public var value2:
@@ -6235,6 +6228,7 @@ public enum Components {
                 @frozen public enum Value2Payload: String, Codable, Hashable, Sendable {
                     case tts_hyphen_1 = "tts-1"
                     case tts_hyphen_1_hyphen_hd = "tts-1-hd"
+                    case gpt_hyphen_4o_hyphen_mini_hyphen_tts = "gpt-4o-mini-tts"
                 }
                 /// - Remark: Generated from `#/components/schemas/CreateSpeechRequest/model/value2`.
                 public var value2:
@@ -6294,11 +6288,13 @@ public enum Components {
             /// - Remark: Generated from `#/components/schemas/CreateSpeechRequest/voice`.
             @frozen public enum voicePayload: String, Codable, Hashable, Sendable {
                 case alloy = "alloy"
+                case ash = "ash"
+                case ballad = "ballad"
+                case coral = "coral"
                 case echo = "echo"
-                case fable = "fable"
-                case onyx = "onyx"
-                case nova = "nova"
+                case sage = "sage"
                 case shimmer = "shimmer"
+                case verse = "verse"
             }
             /// The voice to use when generating the audio. Supported voices are `alloy`, `echo`, `fable`, `onyx`, `nova`, and `shimmer`.
             ///
@@ -6312,6 +6308,8 @@ public enum Components {
                 case opus = "opus"
                 case aac = "aac"
                 case flac = "flac"
+                case wav = "wav"
+                case pcm = "pcm"
             }
             /// The format to audio in. Supported formats are `mp3`, `opus`, `aac`, and `flac`.
             ///

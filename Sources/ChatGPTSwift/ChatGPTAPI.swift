@@ -19,6 +19,7 @@ public typealias ChatCompletionTool = Components.Schemas.ChatCompletionTool
 public typealias ChatCompletionResponseMessage = Components.Schemas.ChatCompletionResponseMessage
 public typealias ChatGPTModel = Components.Schemas.CreateChatCompletionRequest.modelPayload
     .Value2Payload
+typealias ModelPayload = Components.Schemas.CreateChatCompletionRequest.modelPayload
 
 public class ChatGPTAPI: @unchecked Sendable {
 
@@ -109,10 +110,56 @@ public class ChatGPTAPI: @unchecked Sendable {
         self.historyList.append(Message(role: "user", content: userText))
         self.historyList.append(Message(role: "assistant", content: responseText))
     }
-
+    
     public func sendMessageStream(
         text: String,
-        model: ChatGPTModel = .gpt_hyphen_4o,
+        model: String,
+        systemText: String = ChatGPTAPI.Constants.defaultSystemText,
+        temperature: Double = ChatGPTAPI.Constants.defaultTemperature,
+        maxTokens: Int? = nil,
+        responseFormat: Components.Schemas.CreateChatCompletionRequest.response_formatPayload? =
+            nil,
+        stop: Components.Schemas.CreateChatCompletionRequest.stopPayload? = nil,
+        imageData: Data? = nil
+    ) async throws -> AsyncMapSequence<
+        AsyncThrowingPrefixWhileSequence<
+            AsyncThrowingMapSequence<
+                ServerSentEventsDeserializationSequence<
+                    ServerSentEventsLineDeserializationSequence<HTTPBody>
+                >,
+                ServerSentEventWithJSONData<Components.Schemas.CreateChatCompletionStreamResponse>
+            >
+        >, String
+    > {
+        try await sendMessageStreamInternal(text: text, model: .init(value1: model, value2: nil), systemText: systemText, temperature: temperature, maxTokens: maxTokens, responseFormat: responseFormat, stop: stop, imageData: imageData)
+    }
+    
+    public func sendMessageStream(
+        text: String,
+        model: ChatGPTModel = .gpt_hyphen_4_period_1,
+        systemText: String = ChatGPTAPI.Constants.defaultSystemText,
+        temperature: Double = ChatGPTAPI.Constants.defaultTemperature,
+        maxTokens: Int? = nil,
+        responseFormat: Components.Schemas.CreateChatCompletionRequest.response_formatPayload? =
+            nil,
+        stop: Components.Schemas.CreateChatCompletionRequest.stopPayload? = nil,
+        imageData: Data? = nil
+    ) async throws -> AsyncMapSequence<
+        AsyncThrowingPrefixWhileSequence<
+            AsyncThrowingMapSequence<
+                ServerSentEventsDeserializationSequence<
+                    ServerSentEventsLineDeserializationSequence<HTTPBody>
+                >,
+                ServerSentEventWithJSONData<Components.Schemas.CreateChatCompletionStreamResponse>
+            >
+        >, String
+    > {
+        try await sendMessageStreamInternal(text: text, model: .init(value1: nil, value2: model), systemText: systemText, temperature: temperature, maxTokens: maxTokens, responseFormat: responseFormat, stop: stop, imageData: imageData)
+    }
+
+    private func sendMessageStreamInternal(
+        text: String,
+        model: ModelPayload,
         systemText: String = ChatGPTAPI.Constants.defaultSystemText,
         temperature: Double = ChatGPTAPI.Constants.defaultTemperature,
         maxTokens: Int? = nil,
@@ -141,7 +188,7 @@ public class ChatGPTAPI: @unchecked Sendable {
                 body: .json(
                     .init(
                         messages: messages,
-                        model: .init(value1: nil, value2: model),
+                        model: model,
                         max_tokens: maxTokens,
                         response_format: responseFormat,
                         stop: stop,
@@ -173,13 +220,42 @@ public class ChatGPTAPI: @unchecked Sendable {
             } else {
                 statusCode = 500
             }
-            throw getError(statusCode: statusCode, model: model.rawValue, payload: nil)
+            throw getError(statusCode: statusCode, model: model.value1 ?? model.value2?.rawValue, payload: nil)
         }
     }
-
+    
+    
     public func sendMessage(
         text: String,
-        model: ChatGPTModel = .gpt_hyphen_4o,
+        model: String,
+        systemText: String = ChatGPTAPI.Constants.defaultSystemText,
+        temperature: Double = ChatGPTAPI.Constants.defaultTemperature,
+        maxTokens: Int? = nil,
+        responseFormat: Components.Schemas.CreateChatCompletionRequest.response_formatPayload? =
+            nil,
+        stop: Components.Schemas.CreateChatCompletionRequest.stopPayload? = nil,
+        imageData: Data? = nil
+    ) async throws -> String {
+        try await sendMessageInternal(text: text, model: .init(value1: model, value2: nil), systemText: systemText, temperature: temperature, maxTokens: maxTokens, responseFormat: responseFormat, stop: stop, imageData: imageData)
+    }
+    
+    public func sendMessage(
+        text: String,
+        model: ChatGPTModel = .gpt_hyphen_4_period_1,
+        systemText: String = ChatGPTAPI.Constants.defaultSystemText,
+        temperature: Double = ChatGPTAPI.Constants.defaultTemperature,
+        maxTokens: Int? = nil,
+        responseFormat: Components.Schemas.CreateChatCompletionRequest.response_formatPayload? =
+            nil,
+        stop: Components.Schemas.CreateChatCompletionRequest.stopPayload? = nil,
+        imageData: Data? = nil
+    ) async throws -> String {
+        try await sendMessageInternal(text: text, model: .init(value1: nil, value2: model), systemText: systemText, temperature: temperature, maxTokens: maxTokens, responseFormat: responseFormat, stop: stop, imageData: imageData)
+    }
+
+    private func sendMessageInternal(
+        text: String,
+        model: ModelPayload,
         systemText: String = ChatGPTAPI.Constants.defaultSystemText,
         temperature: Double = ChatGPTAPI.Constants.defaultTemperature,
         maxTokens: Int? = nil,
@@ -197,7 +273,7 @@ public class ChatGPTAPI: @unchecked Sendable {
             body: .json(
                 .init(
                     messages: messages,
-                    model: .init(value1: nil, value2: model),
+                    model: model,
                     max_tokens: maxTokens,
                     response_format: responseFormat,
                     stop: stop
@@ -212,15 +288,44 @@ public class ChatGPTAPI: @unchecked Sendable {
             self.appendToHistoryList(userText: text, responseText: content)
             return content
         case .undocumented(let statusCode, let payload):
-            throw getError(statusCode: statusCode, model: model.rawValue, payload: payload)
+            throw getError(statusCode: statusCode, model: model.value1 ?? model.value2?.rawValue, payload: payload)
         }
     }
-
+    
     public func callFunction(
         prompt: String,
         tools: [ChatCompletionTool],
-        model: Components.Schemas.CreateChatCompletionRequest.modelPayload.Value2Payload =
-            .gpt_hyphen_4,
+        model: ChatGPTModel = .gpt_hyphen_4_period_1,
+        maxTokens: Int? = nil,
+        responseFormat: Components.Schemas.CreateChatCompletionRequest.response_formatPayload? =
+            nil,
+        stop: Components.Schemas.CreateChatCompletionRequest.stopPayload? = nil,
+        systemText: String =
+            "Don't make assumptions about what values to plug into functions. Ask for clarification if a user request is ambiguous.",
+        imageData: Data? = nil
+    ) async throws -> ChatCompletionResponseMessage {
+        try await callFunctionInternal(prompt: prompt, tools: tools, model: .init(value1: nil, value2: model), maxTokens: maxTokens, responseFormat: responseFormat, stop: stop, systemText: systemText, imageData: imageData)
+    }
+    
+    public func callFunction(
+        prompt: String,
+        tools: [ChatCompletionTool],
+        model: String,
+        maxTokens: Int? = nil,
+        responseFormat: Components.Schemas.CreateChatCompletionRequest.response_formatPayload? =
+            nil,
+        stop: Components.Schemas.CreateChatCompletionRequest.stopPayload? = nil,
+        systemText: String =
+            "Don't make assumptions about what values to plug into functions. Ask for clarification if a user request is ambiguous.",
+        imageData: Data? = nil
+    ) async throws -> ChatCompletionResponseMessage {
+        try await callFunctionInternal(prompt: prompt, tools: tools, model: .init(value1: model, value2: nil), maxTokens: maxTokens, responseFormat: responseFormat, stop: stop, systemText: systemText, imageData: imageData)
+    }
+
+    private func callFunctionInternal(
+        prompt: String,
+        tools: [ChatCompletionTool],
+        model: ModelPayload,
         maxTokens: Int? = nil,
         responseFormat: Components.Schemas.CreateChatCompletionRequest.response_formatPayload? =
             nil,
@@ -239,7 +344,7 @@ public class ChatGPTAPI: @unchecked Sendable {
                 body: .json(
                     .init(
                         messages: messages,
-                        model: .init(value1: nil, value2: model),
+                        model: model,
                         max_tokens: maxTokens,
                         response_format: responseFormat,
                         stop: stop,
@@ -254,20 +359,40 @@ public class ChatGPTAPI: @unchecked Sendable {
             }
             return message
         case .undocumented(let statusCode, let payload):
-            throw getError(statusCode: statusCode, model: model.rawValue, payload: payload)
+            throw getError(statusCode: statusCode, model: model.value1 ?? model.value2?.rawValue, payload: payload)
         }
     }
-
+    
+    
+    public func generateSpeechFrom(
+        input: String,
+        model: String,
+        voice: Components.Schemas.CreateSpeechRequest.voicePayload = .alloy,
+        format: Components.Schemas.CreateSpeechRequest.response_formatPayload = .aac
+    ) async throws -> Data {
+        try await generateSpeechInternalFrom(input: input, model: .init(value1: model, value2: nil), voice: voice, format: format)
+    }
+    
+    
     public func generateSpeechFrom(
         input: String,
         model: Components.Schemas.CreateSpeechRequest.modelPayload.Value2Payload = .tts_hyphen_1,
         voice: Components.Schemas.CreateSpeechRequest.voicePayload = .alloy,
         format: Components.Schemas.CreateSpeechRequest.response_formatPayload = .aac
     ) async throws -> Data {
+        try await generateSpeechInternalFrom(input: input, model: .init(value1: nil, value2: model), voice: voice, format: format)
+    }
+
+    private func generateSpeechInternalFrom(
+        input: String,
+        model: Components.Schemas.CreateSpeechRequest.modelPayload,
+        voice: Components.Schemas.CreateSpeechRequest.voicePayload = .alloy,
+        format: Components.Schemas.CreateSpeechRequest.response_formatPayload = .aac
+    ) async throws -> Data {
         let response = try await client.createSpeech(
             body: .json(
                 .init(
-                    model: .init(value1: nil, value2: model),
+                    model: model,
                     input: input,
                     voice: voice,
                     response_format: format
@@ -285,7 +410,7 @@ public class ChatGPTAPI: @unchecked Sendable {
             }
 
         case .undocumented(let statusCode, let payload):
-            throw getError(statusCode: statusCode, model: model.rawValue, payload: payload)
+            throw getError(statusCode: statusCode, model: model.value1 ?? model.value2?.rawValue, payload: payload)
         }
     }
 
